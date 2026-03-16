@@ -1,0 +1,248 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-deep-black: #0A0A0F;
+  --color-gold: #C9A84C;
+  --color-ivory: #F5F0E8;
+  --color-terracotta: #C4724A;
+  --font-display: "Playfair Display", serif;
+  --font-sans: "DM Sans", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  background-color: #0A0A0F;
+  color: #F5F0E8;
+  font-family: "DM Sans", sans-serif;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100vh;
+  background-color: #0A0A0F;
+}
+
+/* Grain overlay */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.4;
+}
+
+/* Glassmorphism */
+.glass {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(201, 168, 76, 0.15);
+  border-radius: 1rem;
+}
+
+.glass-dark {
+  background: rgba(10, 10, 15, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 0.75rem;
+}
+
+/* Skeleton shimmer */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.03) 25%,
+    rgba(201, 168, 76, 0.08) 50%,
+    rgba(255, 255, 255, 0.03) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: #0A0A0F;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(201, 168, 76, 0.3);
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(201, 168, 76, 0.6);
+}
+
+/* Font utility */
+.font-display {
+  font-family: "Playfair Display", serif;
+}
+
+/* React DatePicker dark theme overrides */
+.react-datepicker-wrapper {
+  width: 100%;
+}
+
+.react-datepicker {
+  background-color: #0A0A0F !important;
+  border: 1px solid rgba(201, 168, 76, 0.3) !important;
+  font-family: "DM Sans", sans-serif !important;
+  color: #F5F0E8 !important;
+  border-radius: 12px !important;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8) !important;
+}
+
+.react-datepicker__header {
+  background-color: rgba(201, 168, 76, 0.08) !important;
+  border-bottom: 1px solid rgba(201, 168, 76, 0.2) !important;
+  padding-top: 12px !important;
+}
+
+.react-datepicker__current-month,
+.react-datepicker__day-name,
+.react-datepicker-time__header,
+.react-datepicker-year-header {
+  color: #F5F0E8 !important;
+}
+
+.react-datepicker__navigation-icon::before {
+  border-color: #C9A84C !important;
+}
+
+.react-datepicker__day {
+  color: #F5F0E8 !important;
+  border-radius: 6px !important;
+  transition: all 0.15s ease;
+}
+
+.react-datepicker__day:hover {
+  background-color: rgba(201, 168, 76, 0.2) !important;
+  color: #F5F0E8 !important;
+}
+
+.react-datepicker__day--selected,
+.react-datepicker__day--range-start,
+.react-datepicker__day--range-end {
+  background-color: #C9A84C !important;
+  color: #0A0A0F !important;
+  font-weight: bold !important;
+}
+
+.react-datepicker__day--in-range {
+  background-color: rgba(201, 168, 76, 0.2) !important;
+  color: #F5F0E8 !important;
+}
+
+.react-datepicker__day--disabled {
+  color: rgba(245, 240, 232, 0.2) !important;
+}
+
+.react-datepicker__day--today {
+  border: 1px solid rgba(201, 168, 76, 0.5) !important;
+  font-weight: 600 !important;
+}
+
+.react-datepicker__day--outside-month {
+  color: rgba(245, 240, 232, 0.2) !important;
+}
+
+.react-datepicker__triangle {
+  display: none !important;
+}
+
+.react-datepicker__navigation {
+  top: 10px !important;
+}
+
+/* Leaflet custom styles */
+.leaflet-container {
+  background: #111116 !important;
+  font-family: "DM Sans", sans-serif;
+}
+
+.leaflet-popup-content-wrapper {
+  background: rgba(10, 10, 15, 0.97) !important;
+  border: 1px solid rgba(201, 168, 76, 0.3) !important;
+  border-radius: 12px !important;
+  color: #F5F0E8 !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8) !important;
+}
+
+.leaflet-popup-content {
+  margin: 16px !important;
+}
+
+.leaflet-popup-tip-container {
+  display: none !important;
+}
+
+.leaflet-control-zoom {
+  border: 1px solid rgba(201, 168, 76, 0.3) !important;
+  border-radius: 8px !important;
+  overflow: hidden;
+}
+
+.leaflet-control-zoom a {
+  background: rgba(10, 10, 15, 0.9) !important;
+  color: rgba(245, 240, 232, 0.7) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+.leaflet-control-zoom a:hover {
+  background: rgba(201, 168, 76, 0.15) !important;
+  color: #C9A84C !important;
+}
+
+/* Range input styling */
+input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  background: rgba(201, 168, 76, 0.2);
+  border-radius: 2px;
+  outline: none;
+}
+
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #C9A84C;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(201, 168, 76, 0.4);
+  transition: all 0.2s ease;
+}
+
+input[type='range']::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 4px 16px rgba(201, 168, 76, 0.6);
+}
+
+input[type='range']::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #C9A84C;
+  cursor: pointer;
+  border: none;
+}
