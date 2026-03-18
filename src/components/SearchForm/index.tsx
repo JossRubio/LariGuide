@@ -99,15 +99,15 @@ function OriginStaticLevel({
 
       {!selected && (
         <div ref={containerRef} className="relative">
-          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gold text-lg pointer-events-none">✈</span>
           <input
             type="text"
             value={query}
             onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
             onFocus={() => setOpen(true)}
             placeholder="¿Desde dónde partes?"
-            className="w-full bg-white/5 border border-white/10 rounded-xl pl-11 pr-4 py-3.5 text-ivory placeholder-ivory/30 text-sm focus:outline-none focus:border-gold/50 transition-all duration-300"
+            className="w-full bg-white/5 border border-white/10 rounded-xl pl-4 pr-11 py-3.5 text-ivory placeholder-ivory/30 text-sm focus:outline-none focus:border-gold/50 transition-all duration-300"
           />
+          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gold text-lg pointer-events-none">✈</span>
 
           <AnimatePresence>
             {open && filtered.length > 0 && (
