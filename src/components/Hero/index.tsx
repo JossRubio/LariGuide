@@ -56,7 +56,7 @@ export function Hero({ onSubmit, loading }: HeroProps) {
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: 'easeOut' }}
-          className="text-center mb-12"
+          className="text-center"
         >
           <motion.p
             initial={{ opacity: 0, letterSpacing: '0.1em' }}
@@ -83,17 +83,19 @@ export function Hero({ onSubmit, loading }: HeroProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.6 }}
-            className="text-ivory/50 text-lg max-w-xl mx-auto leading-relaxed"
+            className="text-ivory/50 text-sm md:text-base leading-relaxed text-center mt-8"
           >
-            Itinerarios personalizados con inteligencia artificial. Cada detalle, cada momento,
-            cada experiencia.
+            Itinerarios personalizados con inteligencia artificial. Cada detalle, cada momento, cada experiencia.
           </motion.p>
 
+        </motion.div>
+
+        <div className="mt-16" style={{ paddingTop: '1rem' }}>
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.8 }}
-            className="flex items-center justify-center gap-8 mt-8 text-ivory/30 text-sm"
+            className="flex items-center justify-center gap-8 mb-4 text-ivory/30 text-sm"
           >
             <span className="flex items-center gap-2">
               <span className="text-gold">✦</span> IA Avanzada
@@ -105,15 +107,15 @@ export function Hero({ onSubmit, loading }: HeroProps) {
               <span className="text-gold">✦</span> Clima en Tiempo Real
             </span>
           </motion.div>
-        </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 60 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.3, ease: 'easeOut' }}
-        >
-          <SearchForm onSubmit={onSubmit} loading={loading} />
-        </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 60 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.3, ease: 'easeOut' }}
+          >
+            <SearchForm onSubmit={onSubmit} loading={loading} />
+          </motion.div>
+        </div>
       </div>
 
       {/* Bottom fade */}
