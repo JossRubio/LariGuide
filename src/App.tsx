@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Hero } from './components/Hero';
+import { InspirationSection } from './components/InspirationSection';
 import { TripSummary } from './components/TripSummary';
 import { MapView } from './components/MapView';
 import { ImageGallery } from './components/ImageGallery';
@@ -81,6 +82,7 @@ function LoadingScreen() {
 export default function App() {
   const [formData, setFormData] = useState<SearchFormData | null>(null);
   const [exportingPDF, setExportingPDF] = useState(false);
+  const [preloadCountry, setPreloadCountry] = useState<string | null>(null);
   const resultRef = useRef<HTMLDivElement>(null);
 
   const { itinerary, loading, error, generate, regenerate, reset } = useItinerary();
@@ -177,15 +179,22 @@ export default function App() {
     <div className="min-h-screen bg-deep-black">
       <AnimatePresence>{loading && <LoadingScreen />}</AnimatePresence>
 
-      {/* Hero / Search */}
+      {/* Hero / Search + Inspiration */}
       <AnimatePresence>
         {!itinerary && (
           <motion.div
             initial={{ opacity: 1 }}
             exit={{ opacity: 0, y: -50 }}
             transition={{ duration: 0.5 }}
+            className="w-full"
           >
-            <Hero onSubmit={handleSubmit} loading={loading} />
+            <Hero
+              onSubmit={handleSubmit}
+              loading={loading}
+              preloadCountry={preloadCountry}
+              onPreloadApplied={() => setPreloadCountry(null)}
+            />
+            <InspirationSection onSelectDestination={setPreloadCountry} />
           </motion.div>
         )}
       </AnimatePresence>

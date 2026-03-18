@@ -3,6 +3,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import express from 'express';
 import cors from 'cors';
+import Groq from 'groq-sdk';
 import Anthropic from '@anthropic-ai/sdk';
 
 // Resolve .env path relative to this file, not the CWD
@@ -12,18 +13,21 @@ config({ path: join(__dirname, '.env') });
 const app = express();
 const PORT = 3001;
 
-// Verify key loaded correctly at startup
-const apiKey = process.env.VITE_ANTHROPIC_API_KEY;
-if (!apiKey) {
-  console.error('ERROR: VITE_ANTHROPIC_API_KEY not found in .env');
+const groqKey = process.env.GROQ_API_KEY;
+const anthropicKey = process.env.ANTHROPIC_API_KEY;
+
+if (!groqKey && !anthropicKey) {
+  console.error('ERROR: No API keys found. Set GROQ_API_KEY and/or ANTHROPIC_API_KEY in .env');
   process.exit(1);
 }
-console.log(`✦ API key loaded: ${apiKey.slice(0, 16)}...${apiKey.slice(-4)}`);
+if (groqKey) console.log(`✦ Groq key loaded:      ${groqKey.slice(0, 8)}...${groqKey.slice(-4)}`);
+if (anthropicKey) console.log(`✦ Anthropic key loaded: ${anthropicKey.slice(0, 8)}...${anthropicKey.slice(-4)}`);
 
 app.use(cors({ origin: 'http://localhost:5173' }));
 app.use(express.json());
 
-const client = new Anthropic({ apiKey });
+const groq = groqKey ? new Groq({ apiKey: groqKey }) : null;
+const anthropic = anthropicKey ? new Anthropic({ apiKey: anthropicKey }) : null;
 
 const SYSTEM_PROMPT = `Eres un experto planificador de viajes de lujo. Genera un itinerario detallado en español para el viaje especificado. Responde ÚNICAMENTE en JSON válido con esta estructura exacta (sin texto adicional, sin markdown, sin bloques de código):
 {
@@ -68,16 +72,12 @@ const SYSTEM_PROMPT = `Eres un experto planificador de viajes de lujo. Genera un
  * complete "dia" object, slices there, and closes all open brackets/braces.
  */
 function parseOrRepairJSON(raw) {
-  // Fast path: valid JSON
   try {
     return JSON.parse(raw);
   } catch (_) {
     // Fall through to repair
   }
 
-  // Find the last complete day object: ends with the alojamiento_sugerido closing brace
-  // Pattern: look for the last occurrence of a closing "}" that ends a day entry
-  // Strategy: walk backwards through "}" positions and try slicing + closing there
   const closings = [];
   for (let i = 0; i < raw.length; i++) {
     if (raw[i] === '}') closings.push(i);
@@ -86,7 +86,6 @@ function parseOrRepairJSON(raw) {
   for (let i = closings.length - 1; i >= 0; i--) {
     const slice = raw.slice(0, closings[i] + 1);
 
-    // Count open/close brackets and braces to determine what needs closing
     let braces = 0;
     let brackets = 0;
     let inString = false;
@@ -103,7 +102,6 @@ function parseOrRepairJSON(raw) {
       else if (ch === ']') brackets--;
     }
 
-    // Build closing suffix
     const suffix = ']'.repeat(Math.max(0, brackets)) + '}'.repeat(Math.max(0, braces));
     const candidate = slice + suffix;
 
@@ -119,8 +117,9 @@ function parseOrRepairJSON(raw) {
   throw new Error('No se pudo reparar el JSON truncado');
 }
 
+// ─── Itinerary endpoint ────────────────────────────────────────────────────────
 app.post('/api/itinerary', async (req, res) => {
-  const { origin, destination, startDate, endDate, budget, budgetEnabled } = req.body;
+  const { origin, destination, startDate, endDate, budget, budgetEnabled, provider = 'groq' } = req.body;
 
   if (!destination || !startDate || !endDate) {
     return res.status(400).json({ error: 'Faltan campos requeridos: destination, startDate, endDate' });
@@ -142,16 +141,34 @@ Genera el itinerario completo con coordenadas GPS reales, costos actualizados y 
   `.trim();
 
   try {
-    const message = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 16000,
-      system: SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: userMessage }],
-    });
+    let text = '';
 
-    const text = message.content[0].type === 'text' ? message.content[0].text : '';
-    if (message.stop_reason === 'max_tokens') {
-      console.warn('Warning: response hit max_tokens limit, attempting JSON repair');
+    if (provider === 'anthropic') {
+      if (!anthropic) return res.status(400).json({ error: 'ANTHROPIC_API_KEY no configurada en el servidor' });
+      const message = await anthropic.messages.create({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 16000,
+        system: SYSTEM_PROMPT,
+        messages: [{ role: 'user', content: userMessage }],
+      });
+      text = message.content[0].type === 'text' ? message.content[0].text : '';
+      if (message.stop_reason === 'max_tokens') {
+        console.warn('Warning: Anthropic response hit max_tokens, attempting JSON repair');
+      }
+    } else {
+      if (!groq) return res.status(400).json({ error: 'GROQ_API_KEY no configurada en el servidor' });
+      const completion = await groq.chat.completions.create({
+        model: 'llama-3.3-70b-versatile',
+        max_tokens: 16000,
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'user', content: userMessage },
+        ],
+      });
+      text = completion.choices[0]?.message?.content || '';
+      if (completion.choices[0]?.finish_reason === 'length') {
+        console.warn('Warning: Groq response hit max_tokens, attempting JSON repair');
+      }
     }
 
     const jsonMatch = text.match(/\{[\s\S]*\}/);
@@ -162,8 +179,49 @@ Genera el itinerario completo con coordenadas GPS reales, costos actualizados y 
     const itinerary = parseOrRepairJSON(jsonMatch[0]);
     res.json(itinerary);
   } catch (error) {
-    console.error('Error calling Anthropic API:', error);
+    console.error(`Error calling ${provider} API:`, error);
     res.status(500).json({ error: error.message || 'Error interno del servidor' });
+  }
+});
+
+// ─── Seasonal recommendations endpoint ────────────────────────────────────────
+app.get('/api/seasonal-recommendations', async (_req, res) => {
+  const monthNames = [
+    'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+    'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
+  ];
+  const currentMonth = monthNames[new Date().getMonth()];
+
+  const prompt = `Estamos en ${currentMonth}. Sugiere exactamente 3 destinos turísticos internacionales que sean ideales para visitar ahora mismo desde Santiago de Chile, considerando que estén en temporada baja o media (mejor relación precio-experiencia). Responde ÚNICAMENTE con un array JSON válido con esta estructura exacta, sin texto adicional:
+[
+  {
+    "name": "nombre del destino (ciudad o país)",
+    "country": "nombre del país en español tal como aparece en una lista de países (ej: Japón, Italia, Tailandia)",
+    "reason": "una sola oración explicando por qué es buen momento para visitar ahora",
+    "estimatedPrice": 1200,
+    "season": "descripción breve de la temporada actual en ese destino"
+  }
+]`;
+
+  try {
+    const completion = await groq.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      max_tokens: 800,
+      messages: [
+        { role: 'system', content: 'Eres un experto en turismo mundial. Responde ÚNICAMENTE con JSON válido, sin texto adicional ni bloques de código.' },
+        { role: 'user', content: prompt },
+      ],
+    });
+
+    const text = completion.choices[0]?.message?.content || '';
+    const jsonMatch = text.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) return res.status(500).json({ error: 'No se pudo generar recomendaciones' });
+
+    const recommendations = JSON.parse(jsonMatch[0]);
+    res.json(recommendations);
+  } catch (error) {
+    console.error('Error getting seasonal recommendations:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 

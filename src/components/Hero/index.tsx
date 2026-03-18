@@ -6,9 +6,11 @@ import { useMemo } from 'react';
 interface HeroProps {
   onSubmit: (data: SearchFormData) => void;
   loading: boolean;
+  preloadCountry?: string | null;
+  onPreloadApplied?: () => void;
 }
 
-export function Hero({ onSubmit, loading }: HeroProps) {
+export function Hero({ onSubmit, loading, preloadCountry, onPreloadApplied }: HeroProps) {
   const particles = useMemo(
     () =>
       Array.from({ length: 50 }).map((_, i) => ({
@@ -113,7 +115,12 @@ export function Hero({ onSubmit, loading }: HeroProps) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.3, ease: 'easeOut' }}
           >
-            <SearchForm onSubmit={onSubmit} loading={loading} />
+            <SearchForm
+              onSubmit={onSubmit}
+              loading={loading}
+              preloadCountry={preloadCountry}
+              onPreloadApplied={onPreloadApplied}
+            />
           </motion.div>
         </div>
       </div>

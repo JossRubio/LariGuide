@@ -1,3 +1,5 @@
+export type AIProvider = 'groq' | 'anthropic';
+
 export interface SearchFormData {
   origin: string;
   originCoords: { lat: number; lng: number } | null;
@@ -8,6 +10,7 @@ export interface SearchFormData {
   endDate: Date | null;
   budget: number | null;
   budgetEnabled: boolean;
+  provider: AIProvider;
 }
 
 export interface Activity {

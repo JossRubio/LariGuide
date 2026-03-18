@@ -4,7 +4,7 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { Button } from '../UI/Button';
 import { Badge } from '../UI/Badge';
-import type { SearchFormData, NominatimResult } from '../../types/itinerary';
+import type { SearchFormData, NominatimResult, AIProvider } from '../../types/itinerary';
 import { COUNTRIES, type StaticCountry } from '../../data/countries';
 import { CHILE_AIRPORT_CITIES, type ChileAirportCity } from '../../data/chileAirports';
 import {
@@ -24,6 +24,8 @@ function hashCode(s: string): number {
 interface SearchFormProps {
   onSubmit: (data: SearchFormData) => void;
   loading: boolean;
+  preloadCountry?: string | null;
+  onPreloadApplied?: () => void;
 }
 
 // ─── Budget helpers ────────────────────────────────────────────────────────────
@@ -404,8 +406,12 @@ function CountryStaticLevel({
 // ─── Destination cascade (Country → Region → City) ────────────────────────────
 function DestinationCascade({
   onChange,
+  preloadCountry,
+  onPreloadApplied,
 }: {
   onChange: (destination: string, coords: { lat: number; lng: number } | null, level: 'country' | 'region' | 'city' | 'zone') => void;
+  preloadCountry?: string | null;
+  onPreloadApplied?: () => void;
 }) {
   const [countries, setCountries] = useState<NominatimResult[]>([]);
   const [regions, setRegions] = useState<NominatimResult[]>([]);
@@ -420,6 +426,42 @@ function DestinationCascade({
   const countryCodes = countries.map((c) => c.address.country_code ?? '').filter(Boolean);
   const regionLevelName =
     countries.length > 0 ? getRegionLevelName(countries[0].address.country_code ?? '') : 'Región/Provincia';
+
+  // Auto-select country when preloadCountry changes (e.g. from InspirationSection)
+  const lastPreloadRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!preloadCountry || preloadCountry === lastPreloadRef.current) return;
+    const found = COUNTRIES.find((c) => c.name === preloadCountry);
+    if (!found) return;
+    lastPreloadRef.current = preloadCountry;
+    setCountries([]);
+    setRegions([]);
+    setCities([]);
+    (async () => {
+      try {
+        const geoResults = await searchCountries(found.name);
+        const geo = geoResults[0];
+        setCountries([{
+          place_id: hashCode(found.code),
+          display_name: found.name,
+          lat: geo?.lat ?? '0',
+          lon: geo?.lon ?? '0',
+          type: 'country',
+          address: { country: found.name, country_code: found.code },
+        }]);
+      } catch {
+        setCountries([{
+          place_id: hashCode(found.code),
+          display_name: found.name,
+          lat: '0',
+          lon: '0',
+          type: 'country',
+          address: { country: found.name, country_code: found.code },
+        }]);
+      }
+      onPreloadApplied?.();
+    })();
+  }, [preloadCountry, onPreloadApplied]);
 
   // Notify parent whenever selections change
   useEffect(() => {
@@ -517,7 +559,7 @@ function DestinationCascade({
 }
 
 // ─── Main SearchForm ──────────────────────────────────────────────────────────
-export function SearchForm({ onSubmit, loading }: SearchFormProps) {
+export function SearchForm({ onSubmit, loading, preloadCountry, onPreloadApplied }: SearchFormProps) {
   const [formData, setFormData] = useState<SearchFormData>({
     origin: '',
     originCoords: null,
@@ -528,6 +570,7 @@ export function SearchForm({ onSubmit, loading }: SearchFormProps) {
     endDate: null,
     budget: null,
     budgetEnabled: false,
+    provider: 'groq',
   });
 
   const [selectedOriginCity, setSelectedOriginCity] = useState<ChileAirportCity | null>(null);
@@ -610,7 +653,11 @@ export function SearchForm({ onSubmit, loading }: SearchFormProps) {
 
         {/* Destination cascade */}
         <div>
-          <DestinationCascade onChange={handleDestinationChange} />
+          <DestinationCascade
+            onChange={handleDestinationChange}
+            preloadCountry={preloadCountry}
+            onPreloadApplied={onPreloadApplied}
+          />
           {errors.destination && <p className="text-red-400 text-xs mt-1">{errors.destination}</p>}
         </div>
       </div>
@@ -737,6 +784,31 @@ export function SearchForm({ onSubmit, loading }: SearchFormProps) {
             </motion.div>
           )}
         </AnimatePresence>
+      </div>
+
+      {/* AI Provider toggle */}
+      <div className="flex items-center justify-center gap-1 mb-4">
+        <span className="text-ivory/30 text-xs mr-2">Motor IA:</span>
+        {(['groq', 'anthropic'] as AIProvider[]).map((p) => {
+          const active = formData.provider === p;
+          const label = p === 'groq' ? 'Llama 3.3' : 'Claude';
+          const icon  = p === 'groq' ? '⚡' : '✦';
+          return (
+            <button
+              key={p}
+              type="button"
+              onClick={() => setFormData((prev) => ({ ...prev, provider: p }))}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
+                active
+                  ? 'bg-gold/15 border border-gold/40 text-gold'
+                  : 'bg-white/5 border border-white/10 text-ivory/40 hover:text-ivory/60 hover:border-white/20'
+              }`}
+            >
+              <span>{icon}</span>
+              {label}
+            </button>
+          );
+        })}
       </div>
 
       <Button type="submit" loading={loading} fullWidth className="py-4 text-base font-semibold">

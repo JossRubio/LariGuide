@@ -15,6 +15,7 @@ export async function generateItinerary(formData: SearchFormData): Promise<Itine
       endDate: endDate!.toISOString(),
       budget,
       budgetEnabled,
+      provider: formData.provider,
     }),
   });
 
