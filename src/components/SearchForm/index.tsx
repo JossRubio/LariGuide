@@ -6,12 +6,11 @@ import { Button } from '../UI/Button';
 import { Badge } from '../UI/Badge';
 import type { SearchFormData, NominatimResult } from '../../types/itinerary';
 import { COUNTRIES, type StaticCountry } from '../../data/countries';
+import { CHILE_AIRPORT_CITIES, type ChileAirportCity } from '../../data/chileAirports';
 import {
-  searchCitiesInChile,
   searchCountries,
   searchRegions,
   searchCitiesInCountries,
-  formatChileCity,
   extractPlaceName,
   getRegionLevelName,
 } from '../../services/nominatim';
@@ -35,54 +34,36 @@ function getBudgetCategory(amount: number): { label: string; color: string } {
   return { label: 'Lujo', color: 'text-terracotta' };
 }
 
-// ─── Generic autocomplete dropdown (used by Origin) ───────────────────────────
-function AutocompleteInput({
-  label,
-  placeholder,
-  value,
-  icon,
-  onSearch,
+// ─── Origin selector using static Chilean airport cities list ─────────────────
+function OriginStaticLevel({
+  selected,
   onSelect,
-  formatResult,
-  onChange,
+  onClear,
 }: {
-  label: string;
-  placeholder: string;
-  value: string;
-  icon: string;
-  onSearch: (q: string) => Promise<NominatimResult[]>;
-  onSelect: (result: NominatimResult, label: string) => void;
-  formatResult: (result: NominatimResult) => string;
-  onChange: (val: string) => void;
+  selected: ChileAirportCity | null;
+  onSelect: (city: ChileAirportCity) => void;
+  onClear: () => void;
 }) {
-  const [results, setResults] = useState<NominatimResult[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    onChange(val);
-    clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(async () => {
-      setLoading(true);
-      try {
-        const data = await onSearch(val);
-        setResults(data);
-        setOpen(true);
-      } finally {
-        setLoading(false);
-      }
-    }, 300);
+  const filtered = CHILE_AIRPORT_CITIES.filter(
+    (c) =>
+      query.length === 0 ||
+      c.name.toLowerCase().includes(query.toLowerCase()) ||
+      c.iata.toLowerCase().includes(query.toLowerCase())
+  );
+
+  const handleSelect = (city: ChileAirportCity) => {
+    onSelect(city);
+    setQuery('');
+    setOpen(false);
   };
 
-  const handleSelect = (result: NominatimResult) => {
-    const label = formatResult(result);
-    onChange(label);
-    onSelect(result, label);
-    setResults([]);
-    setOpen(false);
+  const handleClear = () => {
+    onClear();
+    setQuery('');
   };
 
   useEffect(() => {
@@ -95,58 +76,64 @@ function AutocompleteInput({
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const showDropdown = open && (results.length > 0 || loading);
-
   return (
     <div>
       <label className="block text-ivory/50 text-xs font-medium uppercase tracking-widest mb-2">
-        {label}
+        Origen
       </label>
-      <div ref={containerRef} className="relative">
-        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gold text-lg pointer-events-none">
-          {icon}
-        </span>
-        <input
-          type="text"
-          value={value}
-          onChange={handleChange}
-          onFocus={() => results.length > 0 && setOpen(true)}
-          placeholder={placeholder}
-          className="w-full bg-white/5 border border-white/10 rounded-xl pl-11 pr-4 py-3.5 text-ivory placeholder-ivory/30 text-sm focus:outline-none focus:border-gold/50 transition-all duration-300"
-        />
-        {loading && (
-          <span className="absolute right-4 top-1/2 -translate-y-1/2">
-            <span className="w-4 h-4 border-2 border-gold/30 border-t-gold rounded-full animate-spin inline-block" />
-          </span>
-        )}
 
-        <AnimatePresence>
-          {showDropdown && (
-            <motion.div
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.15 }}
-              className="absolute z-50 top-full mt-2 w-full glass-dark rounded-xl overflow-hidden shadow-2xl border border-white/10"
+      {selected ? (
+        <div className="flex flex-wrap gap-1.5 mb-2">
+          <span className="inline-flex items-center gap-1.5 bg-gold/15 border border-gold/30 text-gold text-xs px-2.5 py-1 rounded-full">
+            ✈ {selected.name} ({selected.iata})
+            <button
+              type="button"
+              onClick={handleClear}
+              className="hover:text-ivory transition-colors leading-none"
             >
-              {loading && results.length === 0 ? (
-                <div className="px-4 py-3 text-ivory/40 text-sm">Buscando...</div>
-              ) : (
-                results.map((r) => (
+              ×
+            </button>
+          </span>
+        </div>
+      ) : null}
+
+      {!selected && (
+        <div ref={containerRef} className="relative">
+          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gold text-lg pointer-events-none">✈</span>
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
+            onFocus={() => setOpen(true)}
+            placeholder="¿Desde dónde partes?"
+            className="w-full bg-white/5 border border-white/10 rounded-xl pl-11 pr-4 py-3.5 text-ivory placeholder-ivory/30 text-sm focus:outline-none focus:border-gold/50 transition-all duration-300"
+          />
+
+          <AnimatePresence>
+            {open && filtered.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.15 }}
+                className="absolute z-50 top-full mt-2 w-full glass-dark rounded-xl overflow-hidden shadow-2xl border border-white/10 max-h-52 overflow-y-auto"
+              >
+                {filtered.map((city) => (
                   <button
-                    key={r.place_id}
+                    key={city.iata}
                     type="button"
-                    onClick={() => handleSelect(r)}
-                    className="w-full text-left px-4 py-3 hover:bg-gold/10 transition-colors border-b border-white/5 last:border-0"
+                    onClick={() => handleSelect(city)}
+                    className="w-full text-left px-4 py-2.5 hover:bg-gold/10 transition-colors border-b border-white/5 last:border-0"
                   >
-                    <div className="text-ivory text-sm">{formatResult(r)}</div>
+                    <div className="text-ivory text-sm">{city.name}</div>
+                    <div className="text-ivory/40 text-xs mt-0.5">{city.airport} · {city.iata}</div>
                   </button>
-                ))
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
     </div>
   );
 }
@@ -543,19 +530,23 @@ export function SearchForm({ onSubmit, loading }: SearchFormProps) {
     budgetEnabled: false,
   });
 
+  const [selectedOriginCity, setSelectedOriginCity] = useState<ChileAirportCity | null>(null);
   const [budgetInput, setBudgetInput] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const handleOriginSelect = useCallback(
-    (result: NominatimResult, label: string) => {
-      setFormData((prev) => ({
-        ...prev,
-        origin: label,
-        originCoords: { lat: parseFloat(result.lat), lng: parseFloat(result.lon) },
-      }));
-    },
-    []
-  );
+  const handleOriginSelect = useCallback((city: ChileAirportCity) => {
+    setSelectedOriginCity(city);
+    setFormData((prev) => ({
+      ...prev,
+      origin: city.name,
+      originCoords: { lat: city.lat, lng: city.lon },
+    }));
+  }, []);
+
+  const handleOriginClear = useCallback(() => {
+    setSelectedOriginCity(null);
+    setFormData((prev) => ({ ...prev, origin: '', originCoords: null }));
+  }, []);
 
   const handleDestinationChange = useCallback(
     (destination: string, coords: { lat: number; lng: number } | null, level: 'country' | 'region' | 'city' | 'zone') => {
@@ -609,15 +600,10 @@ export function SearchForm({ onSubmit, loading }: SearchFormProps) {
 
         {/* Origin */}
         <div>
-          <AutocompleteInput
-            label="Origen"
-            placeholder="¿Desde dónde partes?"
-            value={formData.origin}
-            icon="✈"
-            onSearch={searchCitiesInChile}
+          <OriginStaticLevel
+            selected={selectedOriginCity}
             onSelect={handleOriginSelect}
-            formatResult={formatChileCity}
-            onChange={(val) => setFormData((prev) => ({ ...prev, origin: val, originCoords: null }))}
+            onClear={handleOriginClear}
           />
           {errors.origin && <p className="text-red-400 text-xs mt-1">{errors.origin}</p>}
         </div>
