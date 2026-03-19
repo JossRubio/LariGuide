@@ -191,35 +191,58 @@ app.get('/api/seasonal-recommendations', async (_req, res) => {
     'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
   ];
   const currentMonth = monthNames[new Date().getMonth()];
-  const seed = Math.floor(Math.random() * 1000);
 
-  const prompt = `Estamos en ${currentMonth} (semilla de variación: ${seed}). Sugiere exactamente 6 destinos turísticos internacionales ideales para visitar este mes desde Santiago de Chile. Los destinos DEBEN ser de distintas partes del mundo: incluye al menos uno de Europa, uno de Asia, uno de Oceanía o África, uno de Norteamérica o el Caribe, y máximo dos de Latinoamérica. Considera buena relación precio-experiencia para este mes en particular. Responde ÚNICAMENTE con un array JSON válido con esta estructura exacta, sin texto adicional:
-[
-  {
-    "name": "nombre del destino (ciudad o país)",
-    "country": "nombre del país en español tal como aparece en una lista de países (ej: Japón, Italia, Tailandia)",
-    "reason": "una sola oración explicando por qué ${currentMonth} es buen momento para visitar",
-    "estimatedPrice": 1200,
-    "season": "descripción breve de la temporada en ese destino durante ${currentMonth}",
-    "iconicAttraction": "nombre del atractivo turístico más icónico y fotografiado del destino (ej: Machu Picchu, Torre Eiffel, Monte Fuji, Coliseo Romano)"
-  }
-]`;
+  const buildPrompt = (seed) => `Estamos en ${currentMonth}. Genera un array JSON con EXACTAMENTE 9 destinos turísticos internacionales para visitar este mes desde Santiago de Chile (semilla: ${seed}). REGLA CRÍTICA: el array debe tener exactamente 9 elementos. Distribuye así:
+1. Europa occidental (ej: Francia, Italia, España, Portugal)
+2. Europa oriental o nórdica (ej: Hungría, Polonia, Grecia, Noruega)
+3. Asia oriental (ej: Japón, Tailandia, Vietnam, Corea)
+4. Asia del sur o Medio Oriente (ej: India, Emiratos, Jordania)
+5. Oceanía o África (ej: Australia, Marruecos, Sudáfrica, Nueva Zelanda)
+6. Norteamérica (ej: México, Canadá, Estados Unidos)
+7. Caribe (ej: Cuba, República Dominicana, Jamaica)
+8. Latinoamérica 1 (ej: Colombia, Perú, Argentina)
+9. Latinoamérica 2 (ej: Brasil, Uruguay, Bolivia)
+Responde ÚNICAMENTE con el array JSON, sin texto ni bloques de código:
+[{"name":"...","country":"...","reason":"una oración por qué ${currentMonth} es ideal","estimatedPrice":1200,"season":"clima breve en ${currentMonth}","iconicAttraction":"atractivo más icónico (ej: Torre Eiffel, Machu Picchu)"}]`;
 
-  try {
+  const callGroq = async (seed) => {
     const completion = await groq.chat.completions.create({
       model: 'llama-3.3-70b-versatile',
-      max_tokens: 1600,
+      max_tokens: 4000,
+      temperature: 0.7,
       messages: [
-        { role: 'system', content: 'Eres un experto en turismo mundial. Responde ÚNICAMENTE con JSON válido, sin texto adicional ni bloques de código.' },
-        { role: 'user', content: prompt },
+        { role: 'system', content: 'Eres un experto en turismo. Responde ÚNICAMENTE con un array JSON válido de exactamente 9 elementos. Sin texto adicional, sin bloques de código, sin explicaciones.' },
+        { role: 'user', content: buildPrompt(seed) },
       ],
     });
-
     const text = completion.choices[0]?.message?.content || '';
     const jsonMatch = text.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) return res.status(500).json({ error: 'No se pudo generar recomendaciones' });
+    if (!jsonMatch) throw new Error('No JSON array found');
+    const parsed = JSON.parse(jsonMatch[0]);
+    if (!Array.isArray(parsed)) throw new Error('Response is not an array');
+    return parsed;
+  };
 
-    const recommendations = JSON.parse(jsonMatch[0]);
+  try {
+    let recommendations = [];
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const seed = Math.floor(Math.random() * 1000);
+      try {
+        const result = await callGroq(seed);
+        if (result.length >= 9) {
+          recommendations = result.slice(0, 9);
+          break;
+        }
+        console.warn(`Attempt ${attempt + 1}: got ${result.length} items, retrying...`);
+        recommendations = result; // keep best so far
+      } catch (err) {
+        console.warn(`Attempt ${attempt + 1} failed:`, err.message);
+      }
+    }
+
+    if (recommendations.length === 0) {
+      return res.status(500).json({ error: 'No se pudo generar recomendaciones' });
+    }
     res.json(recommendations);
   } catch (error) {
     console.error('Error getting seasonal recommendations:', error);
