@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { searchImages } from '../../services/wikimedia';
+import { getDestinationImages } from '../../data/destinations-images';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 interface SeasonalRec {
@@ -24,11 +25,19 @@ function SeasonalCard({
   const [imgLoading, setImgLoading] = useState(true);
 
   useEffect(() => {
+    // 1. Buscar en base de datos local (por país, luego por nombre del destino)
+    const local = getDestinationImages(rec.country) ?? getDestinationImages(rec.name);
+    if (local) {
+      setImageUrl(local[Math.floor(Math.random() * local.length)]);
+      setImgLoading(false);
+      return;
+    }
+    // 2. Fallback: búsqueda dinámica en Wikimedia Commons
     searchImages(rec.iconicAttraction || rec.name, 1)
       .then((imgs) => { if (imgs[0]) setImageUrl(imgs[0].thumbUrl); })
       .catch(() => {})
       .finally(() => setImgLoading(false));
-  }, [rec.iconicAttraction, rec.name]);
+  }, [rec.country, rec.name, rec.iconicAttraction]);
 
   return (
     <button

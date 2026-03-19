@@ -192,18 +192,25 @@ app.get('/api/seasonal-recommendations', async (_req, res) => {
   ];
   const currentMonth = monthNames[new Date().getMonth()];
 
-  const buildPrompt = (seed) => `Estamos en ${currentMonth}. Genera un array JSON con EXACTAMENTE 9 destinos turísticos internacionales para visitar este mes desde Santiago de Chile (semilla: ${seed}). REGLA CRÍTICA: el array debe tener exactamente 9 elementos. Distribuye así:
+  const buildPrompt = (seed) => `Estamos en ${currentMonth}. Genera un array JSON con EXACTAMENTE 9 destinos turísticos internacionales para visitar este mes desde Santiago de Chile (semilla: ${seed}).
+
+REGLAS CRÍTICAS:
+1. El array debe tener exactamente 9 elementos.
+2. El campo "name" y el campo "country" deben contener SIEMPRE el nombre del PAÍS completo en español — NUNCA una ciudad, región ni zona geográfica. Ejemplos correctos: "Japón", "Italia", "Colombia". Ejemplos INCORRECTOS: "Tokio", "Roma", "Medellín", "Patagonia", "Bali".
+
+Distribuye los 9 países así:
 1. Europa occidental (ej: Francia, Italia, España, Portugal)
 2. Europa oriental o nórdica (ej: Hungría, Polonia, Grecia, Noruega)
-3. Asia oriental (ej: Japón, Tailandia, Vietnam, Corea)
-4. Asia del sur o Medio Oriente (ej: India, Emiratos, Jordania)
+3. Asia oriental (ej: Japón, Tailandia, Vietnam, Corea del Sur)
+4. Asia del sur o Medio Oriente (ej: India, Emiratos Árabes Unidos, Jordania)
 5. Oceanía o África (ej: Australia, Marruecos, Sudáfrica, Nueva Zelanda)
 6. Norteamérica (ej: México, Canadá, Estados Unidos)
 7. Caribe (ej: Cuba, República Dominicana, Jamaica)
 8. Latinoamérica 1 (ej: Colombia, Perú, Argentina)
 9. Latinoamérica 2 (ej: Brasil, Uruguay, Bolivia)
+
 Responde ÚNICAMENTE con el array JSON, sin texto ni bloques de código:
-[{"name":"...","country":"...","reason":"una oración por qué ${currentMonth} es ideal","estimatedPrice":1200,"season":"clima breve en ${currentMonth}","iconicAttraction":"atractivo más icónico (ej: Torre Eiffel, Machu Picchu)"}]`;
+[{"name":"nombre del país en español","country":"mismo nombre del país en español","reason":"una oración por qué ${currentMonth} es ideal para visitar este país","estimatedPrice":1200,"season":"clima breve en ${currentMonth}","iconicAttraction":"atractivo turístico más icónico del país (ej: Torre Eiffel, Machu Picchu, Monte Fuji)"}]`;
 
   const callGroq = async (seed) => {
     const completion = await groq.chat.completions.create({
