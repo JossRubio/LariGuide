@@ -191,22 +191,24 @@ app.get('/api/seasonal-recommendations', async (_req, res) => {
     'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
   ];
   const currentMonth = monthNames[new Date().getMonth()];
+  const seed = Math.floor(Math.random() * 1000);
 
-  const prompt = `Estamos en ${currentMonth}. Sugiere exactamente 3 destinos turísticos internacionales que sean ideales para visitar ahora mismo desde Santiago de Chile, considerando que estén en temporada baja o media (mejor relación precio-experiencia). Responde ÚNICAMENTE con un array JSON válido con esta estructura exacta, sin texto adicional:
+  const prompt = `Estamos en ${currentMonth} (semilla de variación: ${seed}). Sugiere exactamente 6 destinos turísticos internacionales ideales para visitar este mes desde Santiago de Chile. Los destinos DEBEN ser de distintas partes del mundo: incluye al menos uno de Europa, uno de Asia, uno de Oceanía o África, uno de Norteamérica o el Caribe, y máximo dos de Latinoamérica. Considera buena relación precio-experiencia para este mes en particular. Responde ÚNICAMENTE con un array JSON válido con esta estructura exacta, sin texto adicional:
 [
   {
     "name": "nombre del destino (ciudad o país)",
     "country": "nombre del país en español tal como aparece en una lista de países (ej: Japón, Italia, Tailandia)",
-    "reason": "una sola oración explicando por qué es buen momento para visitar ahora",
+    "reason": "una sola oración explicando por qué ${currentMonth} es buen momento para visitar",
     "estimatedPrice": 1200,
-    "season": "descripción breve de la temporada actual en ese destino"
+    "season": "descripción breve de la temporada en ese destino durante ${currentMonth}",
+    "iconicAttraction": "nombre del atractivo turístico más icónico y fotografiado del destino (ej: Machu Picchu, Torre Eiffel, Monte Fuji, Coliseo Romano)"
   }
 ]`;
 
   try {
     const completion = await groq.chat.completions.create({
       model: 'llama-3.3-70b-versatile',
-      max_tokens: 800,
+      max_tokens: 1600,
       messages: [
         { role: 'system', content: 'Eres un experto en turismo mundial. Responde ÚNICAMENTE con JSON válido, sin texto adicional ni bloques de código.' },
         { role: 'user', content: prompt },

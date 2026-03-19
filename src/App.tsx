@@ -194,7 +194,9 @@ export default function App() {
               preloadCountry={preloadCountry}
               onPreloadApplied={() => setPreloadCountry(null)}
             />
-            <InspirationSection onSelectDestination={setPreloadCountry} />
+            <div style={{ marginTop: '80px' }}>
+              <InspirationSection onSelectDestination={setPreloadCountry} />
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

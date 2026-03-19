@@ -24,7 +24,7 @@ export function Hero({ onSubmit, loading, preloadCountry, onPreloadApplied }: He
   );
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-deep-black">
+    <div className="relative flex items-center justify-center overflow-hidden bg-deep-black">
       {/* Animated particles */}
       <div className="absolute inset-0 pointer-events-none">
         {particles.map((p) => (
@@ -53,7 +53,7 @@ export function Hero({ onSubmit, loading, preloadCountry, onPreloadApplied }: He
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gold/3 rounded-full blur-[100px] pointer-events-none" />
 
       {/* Content */}
-      <div className="relative z-10 w-full max-w-5xl mx-auto px-4 py-20">
+      <div className="relative z-10 w-full max-w-5xl mx-auto px-4" style={{ paddingTop: '80px', paddingBottom: '40px' }}>
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
