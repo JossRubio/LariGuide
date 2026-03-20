@@ -22,13 +22,16 @@ function SeasonalCard({
   onSelect: (country: string) => void;
 }) {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [imageLandmark, setImageLandmark] = useState<string | null>(null);
   const [imgLoading, setImgLoading] = useState(true);
 
   useEffect(() => {
     // 1. Buscar en base de datos local (por país, luego por nombre del destino)
     const local = getDestinationImages(rec.country) ?? getDestinationImages(rec.name);
     if (local) {
-      setImageUrl(local[Math.floor(Math.random() * local.length)]);
+      const picked = local[Math.floor(Math.random() * local.length)];
+      setImageUrl(picked.url);
+      setImageLandmark(picked.landmark);
       setImgLoading(false);
       return;
     }
@@ -57,6 +60,14 @@ function SeasonalCard({
       )}
 
       <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
+
+      {(imageLandmark ?? rec.iconicAttraction) && (
+        <div className="absolute top-3 left-3 z-10">
+          <span className="bg-black/55 backdrop-blur-sm text-ivory/80 text-[10px] font-medium px-2.5 py-1 rounded-full shadow-md tracking-wide">
+            {imageLandmark ?? rec.iconicAttraction}
+          </span>
+        </div>
+      )}
 
       <div className="absolute bottom-0 left-0 right-0 p-4">
         <h3 className="font-display text-xl text-ivory">{rec.name}</h3>
@@ -110,6 +121,20 @@ function Carousel({
 
   const [page, setPage] = useState(0);
   const hovered = useRef(false);
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const [vpWidth, setVpWidth] = useState(0);
+
+  // Measure viewport width for pixel-based translation
+  useEffect(() => {
+    const el = viewportRef.current;
+    if (!el) return;
+    setVpWidth(el.offsetWidth);
+    const ro = new ResizeObserver((entries) => {
+      setVpWidth(entries[0].contentRect.width);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   // Clamp page when perPage/totalPages changes
   useEffect(() => {
@@ -139,11 +164,10 @@ function Carousel({
     end: Math.min((i + 1) * perPage, cardCount),
   }));
 
-  // translateX: each page-slide is w-full (= 100% of container).
-  // The flex track width = totalPages * container width.
-  // translateX(-X%) shifts by X% of track width.
-  // To shift by 1 page = 1 container width: shift by (100 / totalPages)%
-  const translatePct = page * (100 / totalPages);
+  // Pixel-based translation: each page-slide is exactly vpWidth wide,
+  // with gap-4 (16px) between slides. Page N starts at N * (vpWidth + 16).
+  const GAP_PX = 16;
+  const translatePx = vpWidth > 0 ? page * (vpWidth + GAP_PX) : 0;
 
   return (
     <div
@@ -152,12 +176,12 @@ function Carousel({
       onMouseLeave={() => { hovered.current = false; }}
     >
       {/* Viewport */}
-      <div className="overflow-hidden">
-        {/* Track — contains one full-width slide per page */}
+      <div className="overflow-hidden" ref={viewportRef}>
+        {/* Track — gap-4 between page slides */}
         <div
-          className="flex"
+          className="flex gap-4"
           style={{
-            transform: `translateX(-${translatePct}%)`,
+            transform: `translateX(-${translatePx}px)`,
             transition: `transform ${TRANSITION_MS}ms cubic-bezier(0.4, 0, 0.2, 1)`,
           }}
         >
