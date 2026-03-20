@@ -192,34 +192,68 @@ app.get('/api/seasonal-recommendations', async (_req, res) => {
   ];
   const currentMonth = monthNames[new Date().getMonth()];
 
-  const buildPrompt = (seed) => `Estamos en ${currentMonth}. Genera un array JSON con EXACTAMENTE 9 destinos turísticos internacionales para visitar este mes desde Santiago de Chile (semilla: ${seed}).
-
+  const buildPrompt = (seed, exclude = []) => {
+    const excludeClause = exclude.length > 0
+      ? `\nPAÍSES PROHIBIDOS (no repetir ninguno de estos): ${exclude.join(', ')}.\n`
+      : '';
+    return `Estamos en ${currentMonth}. Genera un array JSON con EXACTAMENTE 9 destinos turísticos internacionales para visitar este mes desde Santiago de Chile (semilla: ${seed}).
+${excludeClause}
 REGLAS CRÍTICAS:
 1. El array debe tener exactamente 9 elementos.
 2. El campo "name" y el campo "country" deben contener SIEMPRE el nombre del PAÍS completo en español — NUNCA una ciudad, región ni zona geográfica. Ejemplos correctos: "Japón", "Italia", "Colombia". Ejemplos INCORRECTOS: "Tokio", "Roma", "Medellín", "Patagonia", "Bali".
+3. Cada país debe ser DIFERENTE a los demás del array.
+4. Evita recomendar países que tengan: conflictos armados activos, inestabilidad política grave, crisis humanitarias, restricciones severas de viaje para turistas extranjeros, o situaciones de seguridad que desaconsejen el turismo. Prioriza destinos reconocidamente seguros y amigables para el turismo internacional.
 
 Distribuye los 9 países así:
 1. Europa occidental (ej: Francia, Italia, España, Portugal)
-2. Europa oriental o nórdica (ej: Hungría, Polonia, Grecia, Noruega)
-3. Asia oriental (ej: Japón, Tailandia, Vietnam, Corea del Sur)
-4. Asia del sur o Medio Oriente (ej: India, Emiratos Árabes Unidos, Jordania)
-5. Oceanía o África (ej: Australia, Marruecos, Sudáfrica, Nueva Zelanda)
-6. Norteamérica (ej: México, Canadá, Estados Unidos)
-7. Caribe (ej: Cuba, República Dominicana, Jamaica)
-8. Latinoamérica 1 (ej: Colombia, Perú, Argentina)
-9. Latinoamérica 2 (ej: Brasil, Uruguay, Bolivia)
+2. Europa oriental o nórdica (ej: Hungría, Polonia, Grecia, Noruega, Alemania)
+3. Asia oriental (ej: Japón, Corea del Sur)
+4. Asia sudoriental (ej: Tailandia, Vietnam, Indonesia)
+5. Asia del sur o Medio Oriente (ej: India, Jordania, Emiratos Árabes Unidos, Turquía)
+6. África (ej: Marruecos, Egipto, Sudáfrica)
+7. Oceanía (ej: Australia, Nueva Zelanda)
+8. Norteamérica (ej: Estados Unidos, Canadá, México)
+9. Caribe (ej: Cuba, República Dominicana, Jamaica)
 
 Responde ÚNICAMENTE con el array JSON, sin texto ni bloques de código:
 [{"name":"nombre del país en español","country":"mismo nombre del país en español","reason":"una oración por qué ${currentMonth} es ideal para visitar este país","estimatedPrice":1200,"season":"clima breve en ${currentMonth}","iconicAttraction":"atractivo turístico más icónico del país (ej: Torre Eiffel, Machu Picchu, Monte Fuji)"}]`;
+  };
 
-  const callGroq = async (seed) => {
+  const buildPromptB = (seed, exclude = []) => {
+    const excludeClause = exclude.length > 0
+      ? `\nPAÍSES PROHIBIDOS (no incluir ninguno): ${exclude.join(', ')}.\n`
+      : '';
+    return `Estamos en ${currentMonth}. Genera un array JSON con EXACTAMENTE 9 destinos turísticos internacionales para visitar este mes desde Santiago de Chile (semilla: ${seed}).
+${excludeClause}
+REGLAS CRÍTICAS:
+1. El array debe tener exactamente 9 elementos.
+2. El campo "name" y el campo "country" deben contener SIEMPRE el nombre del PAÍS completo en español — NUNCA una ciudad, región ni zona geográfica.
+3. Cada país debe ser DIFERENTE a los países prohibidos y diferente entre sí.
+4. Evita recomendar países que tengan: conflictos armados activos, inestabilidad política grave, crisis humanitarias, restricciones severas de viaje para turistas extranjeros, o situaciones de seguridad que desaconsejen el turismo. Prioriza destinos reconocidamente seguros y amigables para el turismo internacional.
+
+Distribuye los 9 países así:
+1. Islandia, Croacia, Austria o un país europeo no mencionado en los prohibidos
+2. Sudamérica norte (ej: Colombia, Venezuela, Ecuador)
+3. Sudamérica centro (ej: Perú, Bolivia)
+4. Sudamérica sur (ej: Argentina, Uruguay, Chile)
+5. Sudamérica oriental (ej: Brasil, Paraguay)
+6. Centroamérica (ej: Costa Rica, Guatemala, Panamá)
+7. Medio Oriente no mencionado (ej: Jordania, Omán, Catar, Israel)
+8. África subsahariana (ej: Sudáfrica, Kenia, Tanzania, Etiopía)
+9. Asia central o del sur no mencionada (ej: India, Sri Lanka, Nepal, Uzbekistán)
+
+Responde ÚNICAMENTE con el array JSON, sin texto ni bloques de código:
+[{"name":"nombre del país en español","country":"mismo nombre del país en español","reason":"una oración por qué ${currentMonth} es ideal para visitar este país","estimatedPrice":1200,"season":"clima breve en ${currentMonth}","iconicAttraction":"atractivo turístico más icónico del país (ej: Torre Eiffel, Machu Picchu, Monte Fuji)"}]`;
+  };
+
+  const callGroq = async (prompt) => {
     const completion = await groq.chat.completions.create({
       model: 'llama-3.3-70b-versatile',
       max_tokens: 4000,
       temperature: 0.7,
       messages: [
         { role: 'system', content: 'Eres un experto en turismo. Responde ÚNICAMENTE con un array JSON válido de exactamente 9 elementos. Sin texto adicional, sin bloques de código, sin explicaciones.' },
-        { role: 'user', content: buildPrompt(seed) },
+        { role: 'user', content: prompt },
       ],
     });
     const text = completion.choices[0]?.message?.content || '';
@@ -230,22 +264,40 @@ Responde ÚNICAMENTE con el array JSON, sin texto ni bloques de código:
     return parsed;
   };
 
-  try {
-    let recommendations = [];
+  const callWithRetry = async (promptFn, label) => {
     for (let attempt = 0; attempt < 3; attempt++) {
       const seed = Math.floor(Math.random() * 1000);
       try {
-        const result = await callGroq(seed);
-        if (result.length >= 9) {
-          recommendations = result.slice(0, 9);
-          break;
-        }
-        console.warn(`Attempt ${attempt + 1}: got ${result.length} items, retrying...`);
-        recommendations = result; // keep best so far
+        const result = await callGroq(promptFn(seed));
+        if (result.length >= 9) return result.slice(0, 9);
+        console.warn(`${label} attempt ${attempt + 1}: got ${result.length} items, retrying...`);
       } catch (err) {
-        console.warn(`Attempt ${attempt + 1} failed:`, err.message);
+        // Rate limit errors: no point retrying, propagate immediately
+        if (err.status === 429) throw err;
+        console.warn(`${label} attempt ${attempt + 1} failed:`, err.message);
       }
     }
+    return [];
+  };
+
+  try {
+    // Group A: first 9 destinations
+    const groupA = await callWithRetry((seed) => buildPrompt(seed), 'GroupA');
+
+    // Group B: 9 more destinations, explicitly excluding countries from group A
+    const excludedCountries = groupA.map(r => r.country).filter(Boolean);
+    const groupB = await callWithRetry((seed) => buildPromptB(seed, excludedCountries), 'GroupB');
+
+    // Final dedup safety net
+    const seen = new Set();
+    const recommendations = [...groupA, ...groupB].filter(({ country }) => {
+      const key = country?.toLowerCase().trim();
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    console.log(`Returning ${recommendations.length} recommendations (${groupA.length} + ${groupB.length} before dedup)`);
 
     if (recommendations.length === 0) {
       return res.status(500).json({ error: 'No se pudo generar recomendaciones' });

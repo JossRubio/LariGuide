@@ -91,7 +91,7 @@ function SkeletonCard() {
 }
 
 // ─── Carousel ──────────────────────────────────────────────────────────────────
-const TOTAL_CARDS = 9;
+const TOTAL_CARDS = 18;
 const DESKTOP_PER_PAGE = 3;
 const AUTO_INTERVAL = 10000;
 const TRANSITION_MS = 500;
@@ -251,15 +251,27 @@ function Carousel({
 // ─── Main component ────────────────────────────────────────────────────────────
 export function InspirationSection({ onSelectDestination }: { onSelectDestination: (country: string) => void }) {
   const [seasonal, setSeasonal] = useState<SeasonalRec[]>([]);
-  const [seasonalLoading, setSeasonalLoading] = useState(true);
+  const [seasonalLoading, setSeasonalLoading] = useState(false);
+  const [seasonalError, setSeasonalError] = useState<string | null>(null);
+  const [triggered, setTriggered] = useState(false);
 
-  useEffect(() => {
+  const generate = () => {
+    setTriggered(true);
+    setSeasonalLoading(true);
+    setSeasonalError(null);
+    setSeasonal([]);
     fetch('http://localhost:3001/api/seasonal-recommendations')
       .then((r) => r.json())
-      .then((data) => setSeasonal(data))
-      .catch(() => {})
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setSeasonal(data);
+        } else {
+          setSeasonalError(data.error ?? 'Error al cargar recomendaciones');
+        }
+      })
+      .catch(() => setSeasonalError('No se pudo conectar con el servidor'))
       .finally(() => setSeasonalLoading(false));
-  }, []);
+  };
 
   const handleSelect = (country: string) => {
     onSelectDestination(country);
@@ -287,19 +299,70 @@ export function InspirationSection({ onSelectDestination }: { onSelectDestinatio
           </p>
         </div>
 
+        {/* Initial state — trigger button */}
+        {!triggered && (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="flex flex-col items-center justify-center py-16 gap-5"
+          >
+            <div className="w-16 h-16 rounded-full border border-gold/20 bg-white/3 flex items-center justify-center">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-gold/70">
+                <path d="M12 2a1 1 0 0 1 1 1v2a1 1 0 0 1-2 0V3a1 1 0 0 1 1-1z"/>
+                <path d="M12 18a1 1 0 0 1 1 1v2a1 1 0 0 1-2 0v-2a1 1 0 0 1 1-1z"/>
+                <path d="M4.22 4.22a1 1 0 0 1 1.42 0l1.41 1.42a1 1 0 0 1-1.41 1.41L4.22 5.64a1 1 0 0 1 0-1.42z"/>
+                <path d="M16.95 16.95a1 1 0 0 1 1.41 0l1.42 1.41a1 1 0 0 1-1.42 1.42l-1.41-1.42a1 1 0 0 1 0-1.41z"/>
+                <path d="M2 12a1 1 0 0 1 1-1h2a1 1 0 0 1 0 2H3a1 1 0 0 1-1-1z"/>
+                <path d="M18 12a1 1 0 0 1 1-1h2a1 1 0 0 1 0 2h-2a1 1 0 0 1-1-1z"/>
+                <path d="M4.22 19.78a1 1 0 0 1 0-1.42l1.41-1.41a1 1 0 0 1 1.42 1.41l-1.42 1.42a1 1 0 0 1-1.41 0z"/>
+                <path d="M16.95 7.05a1 1 0 0 1 0-1.41l1.41-1.42a1 1 0 0 1 1.42 1.42l-1.42 1.41a1 1 0 0 1-1.41 0z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </div>
+            <p className="text-ivory/30 text-sm text-center max-w-xs leading-relaxed">
+              Descubre los mejores destinos para viajar este mes, seleccionados por inteligencia artificial.
+            </p>
+            <button
+              onClick={generate}
+              className="flex items-center gap-2.5 bg-gold text-deep-black text-sm font-semibold px-6 py-3 rounded-full shadow-lg hover:bg-gold/90 active:scale-95 transition-all duration-200"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+              </svg>
+              Generar recomendaciones
+            </button>
+          </motion.div>
+        )}
+
+        {/* Error state */}
+        {triggered && seasonalError && (
+          <div className="flex flex-col items-center gap-4 py-16">
+            <p className="text-ivory/30 text-sm">{seasonalError}</p>
+            <button
+              onClick={generate}
+              className="text-gold/60 text-xs underline underline-offset-4 hover:text-gold transition-colors"
+            >
+              Reintentar
+            </button>
+          </div>
+        )}
+
         {/* Carousel */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="px-6"
-        >
-          <Carousel
-            items={seasonal}
-            loading={seasonalLoading}
-            onSelect={handleSelect}
-          />
-        </motion.div>
+        {triggered && !seasonalError && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="px-6"
+          >
+            <Carousel
+              items={seasonal}
+              loading={seasonalLoading}
+              onSelect={handleSelect}
+            />
+          </motion.div>
+        )}
 
       </div>
     </div>

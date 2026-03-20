@@ -46,9 +46,15 @@ export const destinationImages: Record<string, DestinationImage[]> = {
   ],
 
   "Polonia": [
-    { url: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/03/UNESCO_World_Heritage_Site%2C_Historic_Centre_of_Krak%C3%B3w%2C_former_quarters%2C_Krak%C3%B3w%2C_Poland.png/960px-UNESCO_World_Heritage_Site%2C_Historic_Centre_of_Krak%C3%B3w%2C_former_quarters%2C_Krak%C3%B3w%2C_Poland.png", landmark: "Casco histórico de Cracovia" },
+    { url: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c2/20200516_Sukiennice_w_Krakowie_0909_9963.jpg/960px-20200516_Sukiennice_w_Krakowie_0909_9963.jpg", landmark: "Salón de los Paños, Cracovia" },
     { url: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/Wawel_%284%29.jpg/960px-Wawel_%284%29.jpg", landmark: "Castillo de Wawel, Cracovia" },
     { url: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bb/Royal_Castle_in_Warsaw%2C_Poland%2C_2022%2C_03.jpg/960px-Royal_Castle_in_Warsaw%2C_Poland%2C_2022%2C_03.jpg", landmark: "Castillo Real de Varsovia" },
+  ],
+
+  "Alemania": [
+    { url: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f8/Schloss_Neuschwanstein_2013.jpg/960px-Schloss_Neuschwanstein_2013.jpg", landmark: "Castillo de Neuschwanstein" },
+    { url: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a6/Brandenburger_Tor_abends.jpg/960px-Brandenburger_Tor_abends.jpg", landmark: "Puerta de Brandeburgo, Berlín" },
+    { url: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/K%C3%B6lner_Dom_-_Westfassade_2022_ohne_Ger%C3%BCst-0968_b.jpg/960px-K%C3%B6lner_Dom_-_Westfassade_2022_ohne_Ger%C3%BCst-0968_b.jpg", landmark: "Catedral de Colonia" },
   ],
 
   "Italia": [
@@ -97,7 +103,7 @@ export const destinationImages: Record<string, DestinationImage[]> = {
 
   "Marruecos": [
     { url: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Pavillon_Menarag%C3%A4rten.jpg/960px-Pavillon_Menarag%C3%A4rten.jpg", landmark: "Jardines de la Menara, Marrakech" },
-    { url: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4a/Sahara_real_color.jpg/960px-Sahara_real_color.jpg", landmark: "Desierto del Sahara" },
+    { url: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/84/Merzouga_Dunes_2011.jpg/960px-Merzouga_Dunes_2011.jpg", landmark: "Dunas de Erg Chebbi, Merzuga" },
     { url: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/25/Chefchaouen_%2852189357475%29.jpg/960px-Chefchaouen_%2852189357475%29.jpg", landmark: "Ciudad Azul de Chefchauen" },
   ],
 
@@ -159,12 +165,82 @@ export const destinationImages: Record<string, DestinationImage[]> = {
     { url: "https://upload.wikimedia.org/wikipedia/commons/7/73/Grand_Canyon_of_yellowstone.jpg", landmark: "Cañón del Yellowstone" },
   ],
 
+  // ── CARIBE ──────────────────────────────────────────────────────────────────
+
+  "República Dominicana": [
+    { url: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/45/Cap_Cana_Marina_Dominican_Republic.jpg/960px-Cap_Cana_Marina_Dominican_Republic.jpg", landmark: "Marina de Punta Cana" },
+    { url: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/SantoDomingoedit.JPG/960px-SantoDomingoedit.JPG", landmark: "Ciudad Colonial de Santo Domingo" },
+    { url: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/Los_Haitises_Park.jpeg/960px-Los_Haitises_Park.jpeg", landmark: "Parque Nacional Los Haitises" },
+  ],
+
+  // ── SUDAMÉRICA ───────────────────────────────────────────────────────────────
+
+  "Uruguay": [
+    { url: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bd/Basilica_del_Sanct%C3%ADsimo_Sacramento.jpg/960px-Basilica_del_Sanct%C3%ADsimo_Sacramento.jpg", landmark: "Colonia del Sacramento" },
+    { url: "https://upload.wikimedia.org/wikipedia/commons/4/47/%D0%9F%D1%83%D0%BD%D1%82%D0%B0-%D0%B4%D0%B5%D0%BB%D1%8C-%D0%AD%D1%81%D1%82%D0%B5.jpg", landmark: "Punta del Este" },
+    { url: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/59/PALACIO_LEGISLATIVO_01.JPG/960px-PALACIO_LEGISLATIVO_01.JPG", landmark: "Palacio Legislativo, Montevideo" },
+  ],
+
+  // ── ASIA SUDORIENTAL ─────────────────────────────────────────────────────────
+
+  "Vietnam": [
+    { url: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/79/Ha_Long_Bay_in_2019.jpg/960px-Ha_Long_Bay_in_2019.jpg", landmark: "Bahía de Ha Long" },
+    { url: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/27/10549-Hoi-An_%2837621348460%29.jpg/960px-10549-Hoi-An_%2837621348460%29.jpg", landmark: "Casco antiguo de Hội An" },
+    { url: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c9/Phongnhakebang6.jpg/960px-Phongnhakebang6.jpg", landmark: "Parque Nacional Phong Nha" },
+  ],
+
+  "Indonesia": [
+    { url: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/25/Pradaksina.jpg/960px-Pradaksina.jpg", landmark: "Templo de Borobudur, Java" },
+    { url: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/TanahLot_2014.JPG/960px-TanahLot_2014.JPG", landmark: "Templo de Tanah Lot, Bali" },
+    { url: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Bromo-Semeru-Batok-Widodaren.jpg/960px-Bromo-Semeru-Batok-Widodaren.jpg", landmark: "Volcán Bromo, Java" },
+  ],
+
+  // ── ASIA ORIENTAL ────────────────────────────────────────────────────────────
+
+  "Corea del Sur": [
+    { url: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/63/%EA%B4%91%ED%99%94%EB%AC%B8_%EC%9B%94%EB%8C%80.jpg/960px-%EA%B4%91%ED%99%94%EB%AC%B8_%EC%9B%94%EB%8C%80.jpg", landmark: "Palacio Gyeongbokgung, Seúl" },
+    { url: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c6/Jeju_Island.jpg/960px-Jeju_Island.jpg", landmark: "Isla de Jeju" },
+    { url: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/Bukchon_Hanok_Village_01.jpg/960px-Bukchon_Hanok_Village_01.jpg", landmark: "Aldea Bukchon Hanok, Seúl" },
+  ],
+
+  // ── MEDIO ORIENTE ────────────────────────────────────────────────────────────
+
+  "Jordania": [
+    { url: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/Al_Deir_Petra.JPG/960px-Al_Deir_Petra.JPG", landmark: "El Deir, Petra" },
+    { url: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/56/Mountain_in_Wadi_Rum%2C_Jordan.jpg/960px-Mountain_in_Wadi_Rum%2C_Jordan.jpg", landmark: "Desierto de Wadi Rum" },
+    { url: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/Dead_Sea_beach_00.JPG/960px-Dead_Sea_beach_00.JPG", landmark: "Mar Muerto" },
+  ],
+
+  // ── ÁFRICA ───────────────────────────────────────────────────────────────────
+
+  "Sudáfrica": [
+    { url: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dc/Table_Mountain_DanieVDM.jpg/960px-Table_Mountain_DanieVDM.jpg", landmark: "Montaña de la Mesa, Ciudad del Cabo" },
+    { url: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f0/Kruger_Zebra.JPG/960px-Kruger_Zebra.JPG", landmark: "Parque Nacional Kruger" },
+    { url: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e7/Playa_Dias%2C_Cape_Point%2C_Sud%C3%A1frica%2C_2018-07-23%2C_DD_103.jpg/960px-Playa_Dias%2C_Cape_Point%2C_Sud%C3%A1frica%2C_2018-07-23%2C_DD_103.jpg", landmark: "Cabo de Buena Esperanza" },
+  ],
+
+  // ── EUROPA NÓRDICA ───────────────────────────────────────────────────────────
+
+  "Noruega": [
+    { url: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/Geirangerfjord_.jpg/960px-Geirangerfjord_.jpg", landmark: "Fiordo de Geiranger" },
+    { url: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d3/Aurora_borealis_over_Eielson_Air_Force_Base%2C_Alaska.jpg/960px-Aurora_borealis_over_Eielson_Air_Force_Base%2C_Alaska.jpg", landmark: "Aurora Boreal" },
+    { url: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/85/Lyse_Fjord_et_Preikestolen.jpg/960px-Lyse_Fjord_et_Preikestolen.jpg", landmark: "Preikestolen (Púlpito de Roca)" },
+  ],
+
+  // ── NORTEAMÉRICA ─────────────────────────────────────────────────────────────
+
+  "Canadá": [
+    { url: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/3Falls_Niagara.jpg/960px-3Falls_Niagara.jpg", landmark: "Cataratas del Niágara" },
+    { url: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Moraine_Lake_17092005.jpg/960px-Moraine_Lake_17092005.jpg", landmark: "Lago Moraine, Parque Nacional Banff" },
+    { url: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/Toronto_Skyline_viewed_from_Algonquin_Island_%2816-9_crop%29.jpg/960px-Toronto_Skyline_viewed_from_Algonquin_Island_%2816-9_crop%29.jpg", landmark: "Skyline de Toronto" },
+  ],
+
   // ── OCEANÍA ─────────────────────────────────────────────────────────────────
 
   "Australia": [
     { url: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a0/Sydney_Australia._%2821339175489%29.jpg/960px-Sydney_Australia._%2821339175489%29.jpg", landmark: "Ópera de Sídney" },
     { url: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a8/ULURU.jpg/960px-ULURU.jpg", landmark: "Uluru (Ayers Rock)" },
-    { url: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/ISS-45_StoryOfWater%2C_Great_Barrier_Reef%2C_Australia.jpg/960px-ISS-45_StoryOfWater%2C_Great_Barrier_Reef%2C_Australia.jpg", landmark: "Gran Barrera de Coral" },
+    { url: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/Coral_Outcrop_Flynn_Reef.jpg/960px-Coral_Outcrop_Flynn_Reef.jpg", landmark: "Gran Barrera de Coral" },
   ],
 
   "Nueva Zelanda": [
