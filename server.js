@@ -29,7 +29,15 @@ app.use(express.json());
 const groq = groqKey ? new Groq({ apiKey: groqKey }) : null;
 const anthropic = anthropicKey ? new Anthropic({ apiKey: anthropicKey }) : null;
 
-const SYSTEM_PROMPT = `Eres un experto planificador de viajes de lujo. Genera un itinerario detallado en español para el viaje especificado. Responde ÚNICAMENTE en JSON válido con esta estructura exacta (sin texto adicional, sin markdown, sin bloques de código):
+const buildSystemPrompt = (budget, budgetEnabled) => {
+  let budgetContext;
+  if (budgetEnabled && budget) {
+    budgetContext = `Eres un experto planificador de viajes. El viajero dispone de un presupuesto de $${budget} USD en total. Adapta todas las recomendaciones (alojamiento, actividades, transporte y comida) a ese presupuesto, priorizando opciones que se ajusten a él sin superarlo.`;
+  } else {
+    budgetContext = `Eres un experto planificador de viajes económicos. El viajero no ha especificado un presupuesto, por lo que debes asumir un perfil económico: prioriza opciones asequibles, hostales o alojamientos de bajo costo, transporte público, comida local y actividades gratuitas o de bajo costo.`;
+  }
+
+  return `${budgetContext} Genera un itinerario detallado en español para el viaje especificado. Responde ÚNICAMENTE en JSON válido con esta estructura exacta (sin texto adicional, sin markdown, sin bloques de código):
 {
   "resumen": {
     "presupuestoTotal": { "usd": number, "monedaLocal": string, "valorMonedaLocal": number, "nombreMoneda": string, "simbolo": string },
@@ -66,6 +74,7 @@ const SYSTEM_PROMPT = `Eres un experto planificador de viajes de lujo. Genera un
     }
   ]
 }`;
+};
 
 /**
  * Tries JSON.parse first. If that fails (truncated response), finds the last
@@ -148,7 +157,7 @@ Genera el itinerario completo con coordenadas GPS reales, costos actualizados y 
       const message = await anthropic.messages.create({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 16000,
-        system: SYSTEM_PROMPT,
+        system: buildSystemPrompt(budget, budgetEnabled),
         messages: [{ role: 'user', content: userMessage }],
       });
       text = message.content[0].type === 'text' ? message.content[0].text : '';
@@ -161,7 +170,7 @@ Genera el itinerario completo con coordenadas GPS reales, costos actualizados y 
         model: 'llama-3.3-70b-versatile',
         max_tokens: 16000,
         messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'system', content: buildSystemPrompt(budget, budgetEnabled) },
           { role: 'user', content: userMessage },
         ],
       });
