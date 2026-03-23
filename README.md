@@ -4,6 +4,8 @@
 
 Aplicación web de planificación de viajes con inteligencia artificial. Genera itinerarios personalizados día a día, muestra mapas interactivos, clima en tiempo real, galería de imágenes del destino, y una sección de inspiración con destinos de temporada generados por IA.
 
+> **Nota de diseño:** el layout de la vista de itinerario generado requiere ajustes. Las tarjetas de actividades, la distribución del timeline por día y la responsividad en móvil están pendientes de revisión visual antes de considerarse estables.
+
 ---
 
 ## Stack
@@ -142,7 +144,9 @@ Abrir `http://localhost:5173`.
 - Se evalúa reemplazar el date picker por un componente de rango de fechas inline
 - Manejo de errores visible al usuario (destino no encontrado, timeout de API, sin conexión)
 
-**Itinerario**
+**Layout del itinerario generado**
+- El layout general de la vista de resultados requiere revisión: distribución de columnas, espaciado entre secciones y jerarquía visual entre el resumen del viaje, el mapa y las tarjetas de días
+- Las tarjetas de actividades (ActivityCard) necesitan ajustes de densidad de información: algunos campos (tips, nivel de concurrencia, mejor hora) compiten visualmente sin una jerarquía clara
 - El timeline de actividades dentro de cada día necesita ajustes de scroll en móvil
 - Los popups del mapa con imagen del lugar están pendientes
 - La exportación PDF no replica fielmente el estilo visual de la interfaz
@@ -153,38 +157,3 @@ Abrir `http://localhost:5173`.
 - Tests automatizados
 - Deploy (Vercel + Railway o Render)
 
----
-
-## Estructura del proyecto
-
-```
-LariGuide/
-├── server.js                        # API Express (Groq + Anthropic + recomendaciones)
-├── src/
-│   ├── App.tsx                      # Componente raíz, estado global de la aplicación
-│   ├── components/
-│   │   ├── Hero/                    # Encabezado animado + formulario de búsqueda
-│   │   ├── InspirationSection/      # Carrusel de destinos de temporada
-│   │   ├── Itinerary/               # Vista día a día (DayCard, ActivityCard)
-│   │   ├── TripSummary/             # Tarjeta resumen del viaje (clima, temporada)
-│   │   ├── CostSummary/             # Desglose de costos + exportar PDF
-│   │   ├── MapView/                 # Mapa Leaflet con marcadores de actividades
-│   │   ├── ImageGallery/            # Galería de fotos del destino
-│   │   ├── SearchForm/              # Formulario completo de búsqueda
-│   │   └── UI/                      # Componentes base (Button, Badge, Skeleton)
-│   ├── data/
-│   │   ├── destinations-images.ts   # Base de datos local de imágenes (20 destinos)
-│   │   ├── countries.ts             # Lista de países con coordenadas
-│   │   └── chileAirports.ts         # Ciudades chilenas con aeropuerto (IATA)
-│   ├── hooks/
-│   │   ├── useItinerary.ts          # Lógica de generación y regeneración
-│   │   ├── useWeather.ts            # Consulta clima Open-Meteo
-│   │   └── useWikimedia.ts          # Imágenes del destino principal
-│   ├── services/
-│   │   ├── wikimedia.ts             # Búsqueda dinámica de imágenes (Wikipedia API)
-│   │   ├── nominatim.ts             # Geocodificación OpenStreetMap
-│   │   └── weather.ts               # Cliente Open-Meteo
-│   └── types/
-│       └── itinerary.ts             # Tipos TypeScript del dominio
-└── package.json
-```
