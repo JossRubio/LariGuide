@@ -75,7 +75,6 @@ function LightBox({
 
 export function ImageGallery({ images, loading, destination }: ImageGalleryProps) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
-  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
   const handlePrev = () => {
     if (lightboxIndex === null) return;
@@ -134,38 +133,30 @@ export function ImageGallery({ images, loading, destination }: ImageGalleryProps
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         {/* Featured image - spans 2 columns */}
         <motion.div
-          className="col-span-2 md:col-span-2 relative overflow-hidden rounded-xl cursor-pointer group"
-          style={{ height: '280px' }}
-          onHoverStart={() => setHoveredIndex(0)}
-          onHoverEnd={() => setHoveredIndex(null)}
+          className="col-span-2 md:col-span-2 relative overflow-hidden rounded-xl cursor-pointer group flex flex-col"
           onClick={() => setLightboxIndex(0)}
           whileHover={{ scale: 1.01 }}
           transition={{ duration: 0.3 }}
         >
-          <img
-            src={featured.thumbUrl}
-            alt={featured.title}
-            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-          <AnimatePresence>
-            {hoveredIndex === 0 && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 10 }}
-                className="absolute bottom-0 left-0 right-0 p-4"
-              >
-                <p className="text-ivory text-sm font-medium truncate">{featured.title}</p>
-                {featured.author && (
-                  <p className="text-ivory/60 text-xs">📷 {featured.author}</p>
-                )}
-              </motion.div>
+          <div className="relative overflow-hidden" style={{ height: '240px' }}>
+            <img
+              src={featured.thumbUrl}
+              alt={featured.title}
+              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+            />
+            <div className="absolute top-3 right-3 glass-dark rounded-lg px-2 py-1 text-xs text-ivory/60">
+              🔍 Ver
+            </div>
+          </div>
+          <div className="bg-black/60 backdrop-blur-sm px-4 py-3 rounded-b-xl">
+            <p className="text-ivory text-sm font-medium truncate">{featured.title}</p>
+            {featured.description && (
+              <p className="text-ivory/60 text-xs mt-0.5 line-clamp-2">{featured.description}</p>
             )}
-          </AnimatePresence>
-          <div className="absolute top-3 right-3 glass-dark rounded-lg px-2 py-1 text-xs text-ivory/60">
-            🔍 Ver
+            {featured.author && (
+              <p className="text-ivory/30 text-xs mt-1">📷 {featured.author}</p>
+            )}
           </div>
         </motion.div>
 
@@ -173,38 +164,30 @@ export function ImageGallery({ images, loading, destination }: ImageGalleryProps
         {rest.slice(0, 7).map((image, i) => (
           <motion.div
             key={i}
-            className="relative overflow-hidden rounded-xl cursor-pointer group"
-            style={{ height: '180px' }}
-            onHoverStart={() => setHoveredIndex(i + 1)}
-            onHoverEnd={() => setHoveredIndex(null)}
+            className="relative overflow-hidden rounded-xl cursor-pointer group flex flex-col"
             onClick={() => setLightboxIndex(i + 1)}
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: i * 0.05 }}
             whileHover={{ scale: 1.02 }}
           >
-            <img
-              src={image.thumbUrl}
-              alt={image.title}
-              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-              onError={(e) => {
-                const parent = (e.target as HTMLImageElement).parentElement;
-                if (parent) parent.style.display = 'none';
-              }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            <AnimatePresence>
-              {hoveredIndex === i + 1 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 5 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 5 }}
-                  className="absolute bottom-0 left-0 right-0 p-3"
-                >
-                  <p className="text-ivory text-xs font-medium truncate">{image.title}</p>
-                </motion.div>
+            <div className="relative overflow-hidden" style={{ height: '150px' }}>
+              <img
+                src={image.thumbUrl}
+                alt={image.title}
+                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                onError={(e) => {
+                  const parent = (e.target as HTMLImageElement).closest('.flex') as HTMLElement;
+                  if (parent) parent.style.display = 'none';
+                }}
+              />
+            </div>
+            <div className="bg-black/60 backdrop-blur-sm px-3 py-2 rounded-b-xl flex-1">
+              <p className="text-ivory text-xs font-medium truncate">{image.title}</p>
+              {image.description && (
+                <p className="text-ivory/50 text-xs mt-0.5 line-clamp-2">{image.description}</p>
               )}
-            </AnimatePresence>
+            </div>
           </motion.div>
         ))}
       </div>

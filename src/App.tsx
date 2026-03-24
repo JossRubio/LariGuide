@@ -95,7 +95,8 @@ export default function App() {
     formData?.destinationCoords?.lng ?? null
   );
   const { images, loading: imagesLoading } = useWikimedia(
-    itinerary ? (formData?.destination ?? null) : null
+    itinerary ? (formData?.destination ?? null) : null,
+    itinerary ?? null
   );
 
   const handleSubmit = useCallback(

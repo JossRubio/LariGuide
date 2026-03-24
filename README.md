@@ -15,12 +15,13 @@ Aplicación web de planificación de viajes con inteligencia artificial. Genera 
 | Frontend | React 19, TypeScript, Vite 8 |
 | Estilos / animaciones | Tailwind CSS 4, Framer Motion 12 |
 | Backend | Node.js, Express 5 |
-| IA — generación de itinerario | Groq (`llama-3.3-70b-versatile`) + Anthropic Claude (seleccionable) |
+| IA — generación de itinerario | Groq (`llama-3.3-70b-versatile`) · Anthropic (`claude-sonnet-4-6`) · Google (`gemini-2.5-flash`) |
 | IA — destinos de temporada | Groq (`llama-3.3-70b-versatile`) |
 | Mapas | Leaflet 1.9 + React-Leaflet 5 (sin API key) |
 | Clima | Open-Meteo API (sin API key) |
 | Geocodificación | Nominatim / OpenStreetMap (sin API key) |
-| Imágenes | Wikipedia `pageimages` API + base de datos local de Wikimedia Commons |
+| Tipos de cambio | open.er-api.com (sin API key, tasas en tiempo real) |
+| Imágenes | Wikipedia `pageimages` API + Wikimedia Commons |
 | PDF | html2canvas + jsPDF |
 
 ---
@@ -34,7 +35,7 @@ localhost:3001  →  Express server   (server.js)
                      └─ GET  /api/seasonal-recommendations   — destinos de temporada
 ```
 
-Las llamadas a Groq y Anthropic se realizan desde el servidor para proteger las API keys.
+Las llamadas a los proveedores de IA se realizan desde el servidor para proteger las API keys.
 
 ---
 
@@ -46,9 +47,7 @@ npm install
 
 # 2. Configurar variables de entorno
 cp .env.example .env
-# Editar .env y agregar las claves:
-# GROQ_API_KEY=gsk_...
-# ANTHROPIC_API_KEY=sk-ant-...   (opcional si se usa solo Groq)
+# Editar .env y agregar las claves necesarias
 
 # 3. Iniciar el servidor backend (puerto 3001)
 npm run start:server
@@ -74,6 +73,7 @@ Abrir `http://localhost:5173`.
 |---|---|
 | `GROQ_API_KEY` | API key de Groq (gratuita en console.groq.com). Requerida para itinerario y destinos de temporada. |
 | `ANTHROPIC_API_KEY` | API key de Anthropic. Opcional; necesaria solo si se selecciona Claude como proveedor. |
+| `GEMINI_API_KEY` | API key de Google AI Studio. Opcional; necesaria solo si se selecciona Gemini 2.5 como proveedor. |
 
 ---
 
@@ -86,23 +86,23 @@ Abrir `http://localhost:5173`.
 - Destino: búsqueda dinámica vía Nominatim con autocompletado jerárquico (país → región → ciudad)
 - Selector de fechas de viaje
 - Número de viajeros
-- Presupuesto con slider y categorías (Mochilero / Explorador / Viajero / Lujo)
-- Selector de proveedor de IA: Groq o Anthropic Claude
+- Presupuesto con slider y categorías (Mochilero / Explorador / Viajero / Lujo); si no se especifica presupuesto, el sistema asume un perfil económico por defecto
+- Selector de proveedor de IA: Groq (Llama 3.3), Anthropic Claude y Google Gemini 2.5
 
 **Sección de inspiración — Destinos de temporada**
-- 9 destinos de países generados por Groq según el mes actual, distribuidos entre Europa, Asia, África, Oceanía y América
+- 18 destinos de países generados por Groq según el mes actual, distribuidos entre Europa, Asia, África, Oceanía y América
 - Carrusel con 3 cards simultáneas en desktop y 1 en móvil
 - Auto-avance cada 10 segundos (se pausa al hacer hover)
 - Flechas de navegación doradas con fondo semitransparente; se ocultan en los extremos
 - Indicadores de paginación: 3 puntos, el activo en dorado
 - Transición suave de 500 ms con `cubic-bezier`
 - Al hacer clic en una card, precarga el país en el formulario
-- Imágenes: base de datos local (`src/data/destinations-images.ts`) con 20 destinos × 3 URLs verificadas mediante la Wikipedia API; si el destino no está en la base de datos, cae al buscador dinámico de Wikimedia Commons
+- Imágenes: base de datos local (`src/data/destinations-images.ts`) con 20 destinos × 3 URLs verificadas; si el destino no está en la base de datos, cae al buscador dinámico de Wikimedia Commons
 
 ### Vista de resultados
 
-- **Resumen del viaje** — temporada, presupuesto total en USD y moneda local, recomendaciones generales, cómo llegar desde Chile
-- **Galería de imágenes** — fotos del destino obtenidas desde Wikimedia Commons
+- **Resumen del viaje** — temporada, presupuesto total en USD y moneda local con tasa de cambio en tiempo real (open.er-api.com), recomendaciones generales, cómo llegar desde Chile
+- **Galería de imágenes** — extrae las principales atracciones del itinerario generado y busca una imagen representativa por cada una vía Wikipedia `pageimages` API + Wikimedia Commons como fallback; cada imagen incluye nombre de la atracción y descripción visible
 - **Mapa interactivo** — Leaflet con marcadores en las coordenadas de cada actividad del itinerario
 - **Itinerario día a día** — cards por día con actividades horarias: nombre, descripción, tipo, costo, nivel de concurrencia, mejor hora de visita, tips y link de reservación cuando aplica
 - **Resumen de costos** — desglose por categoría, total estimado, exportación a PDF
@@ -116,44 +116,39 @@ Abrir `http://localhost:5173`.
 ### Completado ✓
 
 - Flujo completo de generación de itinerario (búsqueda → loading animado → resultados)
-- Formulario de búsqueda con origen chileno, destino global y presupuesto
-- Selector de modelo de IA (Groq / Claude) con soporte dual en el servidor
+- Formulario de búsqueda con origen chileno, destino global y presupuesto adaptativo (perfil económico si no se especifica)
+- Tres proveedores de IA seleccionables: Groq (Llama 3.3), Anthropic (Claude Sonnet 4.6), Google (Gemini 2.5 Flash); mismo prompt y estructura JSON para todos
+- Instrucción explícita en el prompt del número exacto de días a generar para evitar itinerarios incompletos
+- Corrección de tasas de cambio en tiempo real vía open.er-api.com; la IA ya no genera los valores de conversión, el servidor los sobreescribe
+- Exportación a PDF corregida para Tailwind CSS 4 (conversión de `oklch`/`oklab`/`color-mix` a RGB antes de html2canvas)
 - Pantalla de carga con mensajes rotativos y animación
 - Mapa interactivo Leaflet con marcadores de actividades
-- Galería de imágenes desde Wikimedia Commons
-- Exportación del itinerario a PDF (html2canvas + jsPDF)
+- Galería de imágenes por atracción con descripción siempre visible
 - Carrusel de destinos de temporada (9 destinos, paginado, auto-avance, responsive)
-- Base de datos local de imágenes con 20 destinos, 3 URLs cada uno, verificadas vía Wikipedia API
-- Lógica de imágenes: base de datos local como fuente primaria, Wikimedia como fallback
-- Búsqueda flexible de imágenes que ignora tildes y mayúsculas
-- Prompt del servidor corregido para devolver nombres de países (no ciudades)
-- Lógica de reintento en el endpoint de recomendaciones (hasta 3 intentos si se reciben menos de 9 destinos)
 - Reparación automática de JSON truncado en respuestas de IA
+- Lógica de reintento en el endpoint de recomendaciones (hasta 3 intentos si se reciben menos de 9 destinos)
+- Footer informativo en pantalla inicial y en vista de resultados
 
 ### Pendiente
 
-**Correcciones derivadas del itinerario generado**
-- Aplicar correcciones al resultado de la IA a partir de los datos del propio itinerario: validación de horarios inconsistentes, costos fuera de rango, actividades duplicadas, links de reservación no verificables, y totales de presupuesto que no cuadran entre días y resumen
+**Imágenes del itinerario**
+- La búsqueda de imágenes por atracción retorna resultados irrelevantes en varios casos (imágenes de películas, logos, artículos no relacionados). Se debe revisar la estrategia de búsqueda en Wikipedia/Wikimedia Commons: mejorar el mapeo de nombres en español a artículos en inglés, y considerar otras fuentes o un ranking de relevancia más estricto
 
-**Imágenes**
-- Ampliar la base de datos local de imágenes de 20 a 70 destinos
-- Filtrado de imágenes de Wikimedia para excluir resultados que no representan atracciones turísticas (personas, logos, infografías)
-
-**Formulario**
-- El selector de destino en cascada (país → región → ciudad) puede ser inconsistente para algunos países según la cobertura de Nominatim
-- Se evalúa reemplazar el date picker por un componente de rango de fechas inline
-- Manejo de errores visible al usuario (destino no encontrado, timeout de API, sin conexión)
+**Generación de itinerario con Gemini 2.5 Flash**
+- En algunos casos el itinerario generado con Gemini 2.5 Flash resulta muy incompleto en relación a los parámetros ingresados (días planificados, actividades por día, detalle de costos). Se debe analizar si el problema es el límite de tokens de salida del modelo, la adherencia al formato JSON requerido, o el comportamiento del modelo ante viajes de larga duración
 
 **Layout del itinerario generado**
 - El layout general de la vista de resultados requiere revisión: distribución de columnas, espaciado entre secciones y jerarquía visual entre el resumen del viaje, el mapa y las tarjetas de días
 - Las tarjetas de actividades (ActivityCard) necesitan ajustes de densidad de información: algunos campos (tips, nivel de concurrencia, mejor hora) compiten visualmente sin una jerarquía clara
 - El timeline de actividades dentro de cada día necesita ajustes de scroll en móvil
 - Los popups del mapa con imagen del lugar están pendientes
-- La exportación PDF no replica fielmente el estilo visual de la interfaz
+
+**Formulario**
+- El selector de destino en cascada puede ser inconsistente para algunos países según la cobertura de Nominatim
+- Manejo de errores visible al usuario (destino no encontrado, timeout de API, sin conexión)
 
 **General**
 - Soporte offline / caché de itinerarios generados
 - Persistencia del historial de búsquedas (localStorage)
 - Tests automatizados
 - Deploy (Vercel + Railway o Render)
-
