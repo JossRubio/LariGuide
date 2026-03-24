@@ -135,13 +135,66 @@ export default function App() {
       const html2canvas = (await import('html2canvas')).default;
       const jsPDF = (await import('jspdf')).default;
 
+      // Usa el motor CSS del navegador para resolver cualquier expresión de color
+      // (oklch, oklab, color-mix, color()) a un valor rgb/rgba que html2canvas entienda
+      const colorProbeDiv = document.createElement('div');
+      colorProbeDiv.style.display = 'none';
+      document.body.appendChild(colorProbeDiv);
+      const colorCache = new Map<string, string>();
+      const resolveColor = (expr: string): string => {
+        if (colorCache.has(expr)) return colorCache.get(expr)!;
+        try {
+          colorProbeDiv.style.setProperty('background-color', expr, 'important');
+          const val = window.getComputedStyle(colorProbeDiv).backgroundColor;
+          const result = val?.startsWith('rgb') ? val : 'transparent';
+          colorCache.set(expr, result);
+          return result;
+        } catch {
+          colorCache.set(expr, 'transparent');
+          return 'transparent';
+        }
+      };
+
+      // Parser con conteo de paréntesis para extraer expresiones completas,
+      // incluyendo color-mix(in oklab, var(--x) 50%, transparent) con parens anidados
+      const patchCss = (css: string): string => {
+        const triggers = ['color-mix(', 'oklch(', 'oklab(', 'color('];
+        let out = '';
+        let i = 0;
+        while (i < css.length) {
+          let found = false;
+          for (const t of triggers) {
+            if (css.startsWith(t, i)) {
+              let depth = 0, j = i;
+              while (j < css.length) {
+                if (css[j] === '(') depth++;
+                else if (css[j] === ')') { if (--depth === 0) { j++; break; } }
+                j++;
+              }
+              out += resolveColor(css.slice(i, j));
+              i = j;
+              found = true;
+              break;
+            }
+          }
+          if (!found) out += css[i++];
+        }
+        return out;
+      };
+
       const canvas = await html2canvas(resultRef.current, {
         scale: 1.5,
         useCORS: true,
         allowTaint: true,
         backgroundColor: '#0A0A0F',
         logging: false,
+        onclone: (clonedDoc) => {
+          Array.from(clonedDoc.querySelectorAll('style')).forEach((el) => {
+            if (el.textContent) el.textContent = patchCss(el.textContent);
+          });
+        },
       });
+      colorProbeDiv.remove();
 
       const imgData = canvas.toDataURL('image/jpeg', 0.85);
       const pdf = new jsPDF({
