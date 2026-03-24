@@ -34,16 +34,20 @@ function LoadingScreen() {
   return (
     <div className="fixed inset-0 z-50 bg-deep-black/95 backdrop-blur-sm flex items-center justify-center">
       <div className="text-center max-w-md mx-auto px-4">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
-          className="w-20 h-20 mx-auto mb-8 relative"
-        >
-          <div className="absolute inset-0 rounded-full border-2 border-gold/20" />
-          <div className="absolute inset-0 rounded-full border-2 border-t-gold border-r-transparent border-b-transparent border-l-transparent" />
-          <div className="absolute inset-2 rounded-full border border-terracotta/30 border-t-terracotta" />
-          <div className="absolute inset-4 flex items-center justify-center text-2xl">✦</div>
-        </motion.div>
+        <div className="flex justify-center mb-8">
+          <div className="w-20 h-20 relative">
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
+              className="absolute inset-0"
+            >
+              <div className="absolute inset-0 rounded-full border-2 border-gold/20" />
+              <div className="absolute inset-0 rounded-full border-2 border-t-gold border-r-transparent border-b-transparent border-l-transparent" />
+              <div className="absolute inset-2 rounded-full border border-terracotta/30 border-t-terracotta" />
+            </motion.div>
+            <span style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', fontSize: '1.5rem', lineHeight: 1 }}>✦</span>
+          </div>
+        </div>
 
         <h2 className="font-display text-2xl text-ivory mb-3">Creando tu viaje perfecto</h2>
 

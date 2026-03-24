@@ -76,36 +76,38 @@ export function DayCard({ day, currencySymbol, index }: DayCardProps) {
               </div>
 
               {/* Accommodation */}
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                className="glass-dark rounded-xl p-4"
-              >
-                <div className="flex items-start gap-3">
-                  <span className="text-2xl">🏨</span>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2 flex-wrap">
-                      <div>
-                        <p className="text-ivory/40 text-xs uppercase tracking-wider mb-0.5">
-                          Alojamiento sugerido
-                        </p>
-                        <h4 className="text-ivory font-semibold">{day.alojamiento_sugerido.nombre}</h4>
-                        <p className="text-ivory/50 text-xs mt-0.5">{day.alojamiento_sugerido.tipo}</p>
+              {day.alojamiento_sugerido && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="glass-dark rounded-xl p-4"
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="text-2xl">🏨</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <div>
+                          <p className="text-ivory/40 text-xs uppercase tracking-wider mb-0.5">
+                            Alojamiento sugerido
+                          </p>
+                          <h4 className="text-ivory font-semibold">{day.alojamiento_sugerido.nombre}</h4>
+                          <p className="text-ivory/50 text-xs mt-0.5">{day.alojamiento_sugerido.tipo}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-gold font-semibold">
+                            ${day.alojamiento_sugerido.costo_noche_usd}
+                          </p>
+                          <p className="text-ivory/30 text-xs">por noche</p>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-gold font-semibold">
-                          ${day.alojamiento_sugerido.costo_noche_usd}
-                        </p>
-                        <p className="text-ivory/30 text-xs">por noche</p>
-                      </div>
+                      <p className="text-ivory/50 text-sm mt-2 leading-relaxed">
+                        {day.alojamiento_sugerido.descripcion}
+                      </p>
                     </div>
-                    <p className="text-ivory/50 text-sm mt-2 leading-relaxed">
-                      {day.alojamiento_sugerido.descripcion}
-                    </p>
                   </div>
-                </div>
-              </motion.div>
+                </motion.div>
+              )}
             </div>
           </motion.div>
         )}
