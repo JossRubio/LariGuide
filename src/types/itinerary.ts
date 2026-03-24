@@ -44,7 +44,7 @@ export interface Day {
   descripcion_del_dia: string;
   actividades: Activity[];
   costo_total_dia_usd: number;
-  alojamiento_sugerido: Accommodation;
+  alojamiento_sugerido: Accommodation | null;
 }
 
 export interface ItineraryData {

@@ -22,7 +22,7 @@ export function CostSummary({ itinerary, formData, onExportPDF, exportingPDF }: 
       costByType[activity.tipo] += activity.costo_usd;
       totalActivities += activity.costo_usd;
     });
-    totalAccommodation += day.alojamiento_sugerido.costo_noche_usd;
+    totalAccommodation += day.alojamiento_sugerido?.costo_noche_usd ?? 0;
   });
 
   const transportCost = resumen.como_llegar.costo_estimado_usd;
