@@ -201,6 +201,14 @@ export default function App() {
             <div style={{ marginTop: '80px' }}>
               <InspirationSection onSelectDestination={setPreloadCountry} />
             </div>
+
+            {/* Footer */}
+            <div className="text-center py-8 border-t border-white/5 mt-16">
+              <p className="text-gold text-sm font-medium">✦ LariGuide</p>
+              <p className="text-ivory/30 text-xs mt-2">
+                Planificación de viajes con IA · Datos de OpenStreetMap, Open-Meteo y Wikimedia
+              </p>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
