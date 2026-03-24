@@ -789,10 +789,10 @@ export function SearchForm({ onSubmit, loading, preloadCountry, onPreloadApplied
       {/* AI Provider toggle */}
       <div className="flex items-center justify-center gap-1 mb-4">
         <span className="text-ivory/30 text-xs mr-2">Motor IA:</span>
-        {(['groq', 'anthropic'] as AIProvider[]).map((p) => {
+        {(['groq', 'anthropic', 'gemini'] as AIProvider[]).map((p) => {
           const active = formData.provider === p;
-          const label = p === 'groq' ? 'Llama 3.3' : 'Claude';
-          const icon  = p === 'groq' ? '⚡' : '✦';
+          const label = p === 'groq' ? 'Llama 3.3' : p === 'anthropic' ? 'Claude' : 'Gemini Flash';
+          const icon  = p === 'groq' ? '⚡' : p === 'anthropic' ? '✦' : '◆';
           return (
             <button
               key={p}

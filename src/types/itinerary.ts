@@ -1,4 +1,4 @@
-export type AIProvider = 'groq' | 'anthropic';
+export type AIProvider = 'groq' | 'anthropic' | 'gemini';
 
 export interface SearchFormData {
   origin: string;

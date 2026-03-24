@@ -5,6 +5,7 @@ import express from 'express';
 import cors from 'cors';
 import Groq from 'groq-sdk';
 import Anthropic from '@anthropic-ai/sdk';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 // Resolve .env path relative to this file, not the CWD
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -15,19 +16,22 @@ const PORT = 3001;
 
 const groqKey = process.env.GROQ_API_KEY;
 const anthropicKey = process.env.ANTHROPIC_API_KEY;
+const geminiKey = process.env.GEMINI_API_KEY;
 
-if (!groqKey && !anthropicKey) {
-  console.error('ERROR: No API keys found. Set GROQ_API_KEY and/or ANTHROPIC_API_KEY in .env');
+if (!groqKey && !anthropicKey && !geminiKey) {
+  console.error('ERROR: No API keys found. Set GROQ_API_KEY, ANTHROPIC_API_KEY, or GEMINI_API_KEY in .env');
   process.exit(1);
 }
-if (groqKey) console.log(`✦ Groq key loaded:      ${groqKey.slice(0, 8)}...${groqKey.slice(-4)}`);
+if (groqKey)     console.log(`✦ Groq key loaded:      ${groqKey.slice(0, 8)}...${groqKey.slice(-4)}`);
 if (anthropicKey) console.log(`✦ Anthropic key loaded: ${anthropicKey.slice(0, 8)}...${anthropicKey.slice(-4)}`);
+if (geminiKey)   console.log(`✦ Gemini key loaded:    ${geminiKey.slice(0, 8)}...${geminiKey.slice(-4)}`);
 
 app.use(cors({ origin: 'http://localhost:5173' }));
 app.use(express.json());
 
 const groq = groqKey ? new Groq({ apiKey: groqKey }) : null;
 const anthropic = anthropicKey ? new Anthropic({ apiKey: anthropicKey }) : null;
+const gemini = geminiKey ? new GoogleGenerativeAI(geminiKey) : null;
 
 const buildSystemPrompt = (budget, budgetEnabled, days) => {
   let budgetContext;
@@ -184,6 +188,11 @@ Genera el itinerario completo con coordenadas GPS reales, costos actualizados y 
       if (message.stop_reason === 'max_tokens') {
         console.warn('Warning: Anthropic response hit max_tokens, attempting JSON repair');
       }
+    } else if (provider === 'gemini') {
+      if (!gemini) return res.status(400).json({ error: 'GEMINI_API_KEY no configurada en el servidor' });
+      const model = gemini.getGenerativeModel({ model: 'gemini-2.0-flash' });
+      const result = await model.generateContent(`${systemPrompt}\n\n${userMessage}`);
+      text = result.response.text();
     } else {
       if (!groq) return res.status(400).json({ error: 'GROQ_API_KEY no configurada en el servidor' });
       const completion = await groq.chat.completions.create({
