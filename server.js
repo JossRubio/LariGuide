@@ -190,7 +190,7 @@ Genera el itinerario completo con coordenadas GPS reales, costos actualizados y 
       }
     } else if (provider === 'gemini') {
       if (!gemini) return res.status(400).json({ error: 'GEMINI_API_KEY no configurada en el servidor' });
-      const model = gemini.getGenerativeModel({ model: 'gemini-2.0-flash' });
+      const model = gemini.getGenerativeModel({ model: 'gemini-2.5-flash' });
       const result = await model.generateContent(`${systemPrompt}\n\n${userMessage}`);
       text = result.response.text();
     } else {

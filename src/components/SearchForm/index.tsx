@@ -791,7 +791,7 @@ export function SearchForm({ onSubmit, loading, preloadCountry, onPreloadApplied
         <span className="text-ivory/30 text-xs mr-2">Motor IA:</span>
         {(['groq', 'anthropic', 'gemini'] as AIProvider[]).map((p) => {
           const active = formData.provider === p;
-          const label = p === 'groq' ? 'Llama 3.3' : p === 'anthropic' ? 'Claude' : 'Gemini Flash';
+          const label = p === 'groq' ? 'Llama 3.3' : p === 'anthropic' ? 'Claude' : 'Gemini 2.5';
           const icon  = p === 'groq' ? '⚡' : p === 'anthropic' ? '✦' : '◆';
           return (
             <button
