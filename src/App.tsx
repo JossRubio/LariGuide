@@ -255,7 +255,8 @@ export default function App() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5 }}
-            className="max-w-6xl mx-auto px-4 py-12 space-y-8"
+            className="py-12 space-y-8"
+            style={{ width: '88%', maxWidth: '1024px', marginLeft: 'auto', marginRight: 'auto' }}
           >
             {/* Nav bar */}
             <motion.div
