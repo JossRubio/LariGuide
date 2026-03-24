@@ -29,7 +29,7 @@ app.use(express.json());
 const groq = groqKey ? new Groq({ apiKey: groqKey }) : null;
 const anthropic = anthropicKey ? new Anthropic({ apiKey: anthropicKey }) : null;
 
-const buildSystemPrompt = (budget, budgetEnabled) => {
+const buildSystemPrompt = (budget, budgetEnabled, days) => {
   let budgetContext;
   if (budgetEnabled && budget) {
     budgetContext = `Eres un experto planificador de viajes. El viajero dispone de un presupuesto de $${budget} USD en total. Adapta todas las recomendaciones (alojamiento, actividades, transporte y comida) a ese presupuesto, priorizando opciones que se ajusten a él sin superarlo.`;
@@ -37,10 +37,12 @@ const buildSystemPrompt = (budget, budgetEnabled) => {
     budgetContext = `Eres un experto planificador de viajes económicos. El viajero no ha especificado un presupuesto, por lo que debes asumir un perfil económico: prioriza opciones asequibles, hostales o alojamientos de bajo costo, transporte público, comida local y actividades gratuitas o de bajo costo.`;
   }
 
-  return `${budgetContext} Genera un itinerario detallado en español para el viaje especificado. Responde ÚNICAMENTE en JSON válido con esta estructura exacta (sin texto adicional, sin markdown, sin bloques de código):
+  const daysInstruction = days ? ` CRÍTICO: el array "dias" DEBE contener EXACTAMENTE ${days} objetos, uno por cada día del viaje, sin excepción.` : '';
+
+  return `${budgetContext}${daysInstruction} Genera un itinerario detallado en español para el viaje especificado. Responde ÚNICAMENTE en JSON válido con esta estructura exacta (sin texto adicional, sin markdown, sin bloques de código):
 {
   "resumen": {
-    "presupuestoTotal": { "usd": number, "monedaLocal": string, "valorMonedaLocal": number, "nombreMoneda": string, "simbolo": string },
+    "presupuestoTotal": { "usd": number, "monedaLocal": "código ISO 4217 de 3 letras, ej: PEN, EUR, JPY, ARS", "valorMonedaLocal": number, "nombreMoneda": "nombre completo de la moneda en español, ej: Sol peruano, Euro, Yen japonés", "simbolo": string },
     "temporada": "baja" | "media" | "alta",
     "recomendaciones_generales": string[],
     "como_llegar": { "descripcion": string, "costo_estimado_usd": number }
@@ -126,6 +128,21 @@ function parseOrRepairJSON(raw) {
   throw new Error('No se pudo reparar el JSON truncado');
 }
 
+async function fetchExchangeRate(currencyCode) {
+  if (!currencyCode || currencyCode === 'USD') return null;
+  try {
+    const res = await fetch('https://open.er-api.com/v6/latest/USD');
+    if (!res.ok) return null;
+    const data = await res.json();
+    const rate = data.rates?.[currencyCode] ?? null;
+    console.log(`[ExchangeRate] USD→${currencyCode}: ${rate} (source: open.er-api.com)`);
+    return rate;
+  } catch (err) {
+    console.warn(`[ExchangeRate] Error fetching rate for ${currencyCode}:`, err.message);
+    return null;
+  }
+}
+
 // ─── Itinerary endpoint ────────────────────────────────────────────────────────
 app.post('/api/itinerary', async (req, res) => {
   const { origin, destination, startDate, endDate, budget, budgetEnabled, provider = 'groq' } = req.body;
@@ -149,15 +166,18 @@ ${budgetEnabled && budget ? `Presupuesto: $${budget} USD` : 'Sin presupuesto def
 Genera el itinerario completo con coordenadas GPS reales, costos actualizados y URLs de reservación oficiales.
   `.trim();
 
+  const systemPrompt = buildSystemPrompt(budget, budgetEnabled, days);
+  const MAX_TOKENS = 16000;
+
   try {
     let text = '';
 
     if (provider === 'anthropic') {
       if (!anthropic) return res.status(400).json({ error: 'ANTHROPIC_API_KEY no configurada en el servidor' });
       const message = await anthropic.messages.create({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 16000,
-        system: buildSystemPrompt(budget, budgetEnabled),
+        model: 'claude-sonnet-4-6',
+        max_tokens: MAX_TOKENS,
+        system: systemPrompt,
         messages: [{ role: 'user', content: userMessage }],
       });
       text = message.content[0].type === 'text' ? message.content[0].text : '';
@@ -168,9 +188,9 @@ Genera el itinerario completo con coordenadas GPS reales, costos actualizados y 
       if (!groq) return res.status(400).json({ error: 'GROQ_API_KEY no configurada en el servidor' });
       const completion = await groq.chat.completions.create({
         model: 'llama-3.3-70b-versatile',
-        max_tokens: 16000,
+        max_tokens: MAX_TOKENS,
         messages: [
-          { role: 'system', content: buildSystemPrompt(budget, budgetEnabled) },
+          { role: 'system', content: systemPrompt },
           { role: 'user', content: userMessage },
         ],
       });
@@ -186,6 +206,28 @@ Genera el itinerario completo con coordenadas GPS reales, costos actualizados y 
     }
 
     const itinerary = parseOrRepairJSON(jsonMatch[0]);
+
+    // Corregir tasa de cambio con datos en tiempo real
+    // Intenta monedaLocal primero (debe ser el código ISO), luego nombreMoneda como fallback
+    const pt = itinerary.resumen?.presupuestoTotal;
+    const candidateA = pt?.monedaLocal?.trim();
+    const candidateB = pt?.nombreMoneda?.trim();
+    const isIsoCode = (s) => s && /^[A-Z]{3}$/.test(s);
+
+    let currencyCode = isIsoCode(candidateA) ? candidateA : isIsoCode(candidateB) ? candidateB : null;
+    const realRate = await fetchExchangeRate(currencyCode);
+    console.log(`Currency: candidateA="${candidateA}" candidateB="${candidateB}" → using "${currencyCode}" → rate=${realRate}`);
+    if (realRate) {
+      itinerary.resumen.presupuestoTotal.valorMonedaLocal = Math.round(realRate * 100) / 100;
+      for (const dia of itinerary.dias || []) {
+        for (const actividad of dia.actividades || []) {
+          if (actividad.costo_usd != null) {
+            actividad.costo_moneda_local = Math.round(actividad.costo_usd * realRate * 100) / 100;
+          }
+        }
+      }
+    }
+
     res.json(itinerary);
   } catch (error) {
     console.error(`Error calling ${provider} API:`, error);
