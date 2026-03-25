@@ -31,6 +31,12 @@ export const destinationImages: Record<string, DestinationImage[]> = {
     { url: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fb/20191219_Fort_Amber%2C_Amer%2C_Jaipur_0955_9481.jpg/960px-20191219_Fort_Amber%2C_Amer%2C_Jaipur_0955_9481.jpg", landmark: "Fuerte Amber, Jaipur" },
   ],
 
+  "Sri Lanka": [
+    { url: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Sigiriya_Rock_Fortress_View_from_Pidurangala_Rock.jpg/960px-Sigiriya_Rock_Fortress_View_from_Pidurangala_Rock.jpg", landmark: "Roca de Sigiriya" },
+    { url: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f3/SL_Kandy_asv2020-01_img34_Sacred_Tooth_Temple.jpg/960px-SL_Kandy_asv2020-01_img34_Sacred_Tooth_Temple.jpg", landmark: "Templo del Diente de Buda, Kandy" },
+    { url: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ef/Ella_Nine_Arch_Bridge_Sri_Lanka.jpg/960px-Ella_Nine_Arch_Bridge_Sri_Lanka.jpg", landmark: "Puente de los Nueve Arcos, Ella" },
+  ],
+
   "Turquía": [
     { url: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4a/Hagia_Sophia_%28228968325%29.jpeg/960px-Hagia_Sophia_%28228968325%29.jpeg", landmark: "Santa Sofía, Estambul" },
     { url: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/59/Cappadocia_balloon_trip%2C_Ortahisar_Castle_%2811893715185%29.jpg/960px-Cappadocia_balloon_trip%2C_Ortahisar_Castle_%2811893715185%29.jpg", landmark: "Capadocia en globo" },
