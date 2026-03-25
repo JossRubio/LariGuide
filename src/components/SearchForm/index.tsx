@@ -21,6 +21,16 @@ function hashCode(s: string): number {
   return Math.abs(h);
 }
 
+function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 interface SearchFormProps {
   onSubmit: (data: SearchFormData) => void;
   loading: boolean;
@@ -48,7 +58,38 @@ function OriginStaticLevel({
 }) {
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
+  const [locating, setLocating] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const handleLocate = () => {
+    if (!navigator.geolocation) {
+      setLocationError('Tu navegador no soporta geolocalización');
+      return;
+    }
+    setLocating(true);
+    setLocationError(null);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        let nearest = CHILE_AIRPORT_CITIES[0];
+        let minDist = Infinity;
+        for (const city of CHILE_AIRPORT_CITIES) {
+          const dist = haversineDistance(latitude, longitude, city.lat, city.lon);
+          if (dist < minDist) {
+            minDist = dist;
+            nearest = city;
+          }
+        }
+        onSelect(nearest);
+        setLocating(false);
+      },
+      () => {
+        setLocationError('No se pudo obtener tu ubicación');
+        setLocating(false);
+      }
+    );
+  };
 
   const filtered = CHILE_AIRPORT_CITIES.filter(
     (c) =>
@@ -80,9 +121,31 @@ function OriginStaticLevel({
 
   return (
     <div>
-      <label className="block text-ivory/50 text-xs font-medium uppercase tracking-widest mb-2">
-        Origen
-      </label>
+      <div className="flex items-center justify-between mb-2">
+        <label className="block text-ivory/50 text-xs font-medium uppercase tracking-widest">
+          Origen
+        </label>
+        <button
+          type="button"
+          onClick={handleLocate}
+          disabled={locating}
+          className="flex items-center gap-1.5 text-xs text-ivory/50 hover:text-gold transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {locating ? (
+            <span className="w-3 h-3 border border-gold/40 border-t-gold rounded-full animate-spin inline-block" />
+          ) : (
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+            </svg>
+          )}
+          {locating ? 'Localizando...' : 'Habilitar localización'}
+        </button>
+      </div>
+
+      {locationError && (
+        <p className="text-red-400 text-xs mb-2">{locationError}</p>
+      )}
 
       {selected ? (
         <div className="flex flex-wrap gap-1.5 mb-2">
