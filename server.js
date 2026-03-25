@@ -306,17 +306,15 @@ Responde ÚNICAMENTE con el array JSON, sin texto ni bloques de código:
 [{"name":"nombre del país en español","country":"mismo nombre del país en español","reason":"una oración por qué ${currentMonth} es ideal para visitar este país","estimatedPrice":1200,"season":"clima breve en ${currentMonth}","iconicAttraction":"atractivo turístico más icónico del país (ej: Torre Eiffel, Machu Picchu, Monte Fuji)"}]`;
   };
 
-  const callGroq = async (prompt) => {
-    const completion = await groq.chat.completions.create({
-      model: 'llama-3.3-70b-versatile',
-      max_tokens: 4000,
-      temperature: 0.7,
-      messages: [
-        { role: 'system', content: 'Eres un experto en turismo. Responde ÚNICAMENTE con un array JSON válido de exactamente 9 elementos. Sin texto adicional, sin bloques de código, sin explicaciones.' },
-        { role: 'user', content: prompt },
-      ],
+  const callGemini = async (prompt) => {
+    if (!gemini) throw new Error('GEMINI_API_KEY no configurada en el servidor');
+    const model = gemini.getGenerativeModel({
+      model: 'gemini-2.5-flash',
+      generationConfig: { temperature: 0.7 },
     });
-    const text = completion.choices[0]?.message?.content || '';
+    const systemInstruction = 'Eres un experto en turismo. Responde ÚNICAMENTE con un array JSON válido de exactamente 9 elementos. Sin texto adicional, sin bloques de código, sin explicaciones.';
+    const result = await model.generateContent(`${systemInstruction}\n\n${prompt}`);
+    const text = result.response.text();
     const jsonMatch = text.match(/\[[\s\S]*\]/);
     if (!jsonMatch) throw new Error('No JSON array found');
     const parsed = JSON.parse(jsonMatch[0]);
@@ -328,12 +326,10 @@ Responde ÚNICAMENTE con el array JSON, sin texto ni bloques de código:
     for (let attempt = 0; attempt < 3; attempt++) {
       const seed = Math.floor(Math.random() * 1000);
       try {
-        const result = await callGroq(promptFn(seed));
+        const result = await callGemini(promptFn(seed));
         if (result.length >= 9) return result.slice(0, 9);
         console.warn(`${label} attempt ${attempt + 1}: got ${result.length} items, retrying...`);
       } catch (err) {
-        // Rate limit errors: no point retrying, propagate immediately
-        if (err.status === 429) throw err;
         console.warn(`${label} attempt ${attempt + 1} failed:`, err.message);
       }
     }
