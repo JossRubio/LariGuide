@@ -7,10 +7,11 @@ interface HeroProps {
   onSubmit: (data: SearchFormData) => void;
   loading: boolean;
   preloadCountry?: string | null;
+  preloadBudget?: number | null;
   onPreloadApplied?: () => void;
 }
 
-export function Hero({ onSubmit, loading, preloadCountry, onPreloadApplied }: HeroProps) {
+export function Hero({ onSubmit, loading, preloadCountry, preloadBudget, onPreloadApplied }: HeroProps) {
   const particles = useMemo(
     () =>
       Array.from({ length: 50 }).map((_, i) => ({
@@ -119,6 +120,7 @@ export function Hero({ onSubmit, loading, preloadCountry, onPreloadApplied }: He
               onSubmit={onSubmit}
               loading={loading}
               preloadCountry={preloadCountry}
+              preloadBudget={preloadBudget}
               onPreloadApplied={onPreloadApplied}
             />
           </motion.div>

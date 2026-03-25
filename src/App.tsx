@@ -87,6 +87,7 @@ export default function App() {
   const [formData, setFormData] = useState<SearchFormData | null>(null);
   const [exportingPDF, setExportingPDF] = useState(false);
   const [preloadCountry, setPreloadCountry] = useState<string | null>(null);
+  const [preloadBudget, setPreloadBudget] = useState<number | null>(null);
   const resultRef = useRef<HTMLDivElement>(null);
 
   const { itinerary, loading, error, generate, regenerate, reset } = useItinerary();
@@ -250,10 +251,11 @@ export default function App() {
               onSubmit={handleSubmit}
               loading={loading}
               preloadCountry={preloadCountry}
-              onPreloadApplied={() => setPreloadCountry(null)}
+              preloadBudget={preloadBudget}
+              onPreloadApplied={() => { setPreloadCountry(null); setPreloadBudget(null); }}
             />
             <div style={{ marginTop: '80px' }}>
-              <InspirationSection onSelectDestination={setPreloadCountry} />
+              <InspirationSection onSelectDestination={(country, budget) => { setPreloadCountry(country); setPreloadBudget(budget); }} />
             </div>
 
             {/* Footer */}

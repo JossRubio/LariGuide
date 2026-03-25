@@ -19,7 +19,7 @@ function SeasonalCard({
   onSelect,
 }: {
   rec: SeasonalRec;
-  onSelect: (country: string) => void;
+  onSelect: (country: string, budget: number) => void;
 }) {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [imageLandmark, setImageLandmark] = useState<string | null>(null);
@@ -44,7 +44,7 @@ function SeasonalCard({
 
   return (
     <button
-      onClick={() => onSelect(rec.country)}
+      onClick={() => onSelect(rec.country, rec.estimatedPrice)}
       className="relative rounded-2xl overflow-hidden aspect-[4/3] group cursor-pointer text-left w-full"
     >
       {imgLoading ? (
@@ -103,7 +103,7 @@ function Carousel({
 }: {
   items: SeasonalRec[];
   loading: boolean;
-  onSelect: (country: string) => void;
+  onSelect: (country: string, budget: number) => void;
 }) {
   // Responsive cards per page
   const [perPage, setPerPage] = useState(() =>
@@ -249,7 +249,7 @@ function Carousel({
 }
 
 // ─── Main component ────────────────────────────────────────────────────────────
-export function InspirationSection({ onSelectDestination }: { onSelectDestination: (country: string) => void }) {
+export function InspirationSection({ onSelectDestination }: { onSelectDestination: (country: string, budget: number) => void }) {
   const [seasonal, setSeasonal] = useState<SeasonalRec[]>([]);
   const [seasonalLoading, setSeasonalLoading] = useState(false);
   const [seasonalError, setSeasonalError] = useState<string | null>(null);
@@ -273,8 +273,8 @@ export function InspirationSection({ onSelectDestination }: { onSelectDestinatio
       .finally(() => setSeasonalLoading(false));
   };
 
-  const handleSelect = (country: string) => {
-    onSelectDestination(country);
+  const handleSelect = (country: string, budget: number) => {
+    onSelectDestination(country, budget);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 

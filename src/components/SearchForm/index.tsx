@@ -35,6 +35,7 @@ interface SearchFormProps {
   onSubmit: (data: SearchFormData) => void;
   loading: boolean;
   preloadCountry?: string | null;
+  preloadBudget?: number | null;
   onPreloadApplied?: () => void;
 }
 
@@ -622,7 +623,7 @@ function DestinationCascade({
 }
 
 // ─── Main SearchForm ──────────────────────────────────────────────────────────
-export function SearchForm({ onSubmit, loading, preloadCountry, onPreloadApplied }: SearchFormProps) {
+export function SearchForm({ onSubmit, loading, preloadCountry, preloadBudget, onPreloadApplied }: SearchFormProps) {
   const [formData, setFormData] = useState<SearchFormData>({
     origin: '',
     originCoords: null,
@@ -639,6 +640,12 @@ export function SearchForm({ onSubmit, loading, preloadCountry, onPreloadApplied
   const [selectedOriginCity, setSelectedOriginCity] = useState<ChileAirportCity | null>(null);
   const [budgetInput, setBudgetInput] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (!preloadBudget) return;
+    setBudgetInput(String(preloadBudget));
+    setFormData((prev) => ({ ...prev, budget: preloadBudget, budgetEnabled: true }));
+  }, [preloadBudget]);
 
   const handleOriginSelect = useCallback((city: ChileAirportCity) => {
     setSelectedOriginCity(city);
@@ -814,19 +821,16 @@ export function SearchForm({ onSubmit, loading, preloadCountry, onPreloadApplied
               className="overflow-hidden"
             >
               <div className="relative mb-2">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gold font-semibold text-sm pointer-events-none">
-                  $
-                </span>
                 <input
                   type="text"
                   inputMode="numeric"
                   value={budgetInput}
                   onChange={handleBudgetChange}
                   placeholder="Ingresa tu presupuesto"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl pl-8 pr-24 py-3.5 text-ivory placeholder-ivory/30 text-sm focus:outline-none focus:border-gold/50 transition-all duration-300"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 pr-24 py-3.5 text-ivory placeholder-ivory/30 text-sm focus:outline-none focus:border-gold/50 transition-all duration-300"
                 />
-                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-ivory/30 text-xs pointer-events-none">
-                  USD
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-ivory/30 text-xs pointer-events-none flex items-center gap-1">
+                  <span className="text-gold font-semibold text-sm">$</span> USD
                 </span>
               </div>
 
