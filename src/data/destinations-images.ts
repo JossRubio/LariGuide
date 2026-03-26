@@ -217,6 +217,12 @@ export const destinationImages: Record<string, DestinationImage[]> = {
     { url: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/Dead_Sea_beach_00.JPG/960px-Dead_Sea_beach_00.JPG", landmark: "Mar Muerto" },
   ],
 
+  "Emiratos Árabes Unidos": [
+    { url: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a6/Burj_Khalifa_%2816260269606%29.jpg/960px-Burj_Khalifa_%2816260269606%29.jpg", landmark: "Burj Khalifa, Dubái" },
+    { url: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/eb/Burj_Al-Arab_%2813996844503%29.jpg/960px-Burj_Al-Arab_%2813996844503%29.jpg", landmark: "Burj Al Arab, Dubái" },
+    { url: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f3/Sheikh_Zayed_Grand_Mosque_in_Abu_Dhabi_-_panoramio.jpg/960px-Sheikh_Zayed_Grand_Mosque_in_Abu_Dhabi_-_panoramio.jpg", landmark: "Gran Mezquita Sheikh Zayed, Abu Dabi" },
+  ],
+
   // ── ÁFRICA ───────────────────────────────────────────────────────────────────
 
   "Sudáfrica": [
