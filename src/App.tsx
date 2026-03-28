@@ -102,6 +102,8 @@ export default function App() {
 
       if (scrollingDown) {
         setNavVisible(false);
+      } else {
+        setNavVisible(true);
       }
 
       clearTimeout(idleTimer);
@@ -130,14 +132,25 @@ export default function App() {
     : 0;
   const currencySymbol = itinerary?.resumen.presupuestoTotal.simbolo ?? '$';
 
+  const hasScrolledToResults = useRef(false);
+
+  useEffect(() => {
+    if (partialResumen && !hasScrolledToResults.current) {
+      hasScrolledToResults.current = true;
+      setTimeout(() => {
+        resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 300);
+    }
+    if (!partialResumen) {
+      hasScrolledToResults.current = false;
+    }
+  }, [partialResumen]);
+
   const handleSubmit = useCallback(
     async (data: SearchFormData) => {
       setFormData(data);
       try {
         await generate(data);
-        setTimeout(() => {
-          resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 300);
       } catch {
         // Error handled in hook
       }

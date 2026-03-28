@@ -30,6 +30,8 @@ export function MapView({ itinerary, destination, destinationCoords }: MapViewPr
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
+  const hasInitialBoundsRef = useRef(false);
+  const prevSelectedDayRef = useRef<number | null | undefined>(undefined);
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
@@ -136,28 +138,6 @@ export function MapView({ itinerary, destination, destinationCoords }: MapViewPr
         });
 
         const marker = L.marker([lat, lng], { icon: customIcon })
-          .bindPopup(`
-            <div style="font-family: 'DM Sans', sans-serif; min-width: 200px;">
-              <div style="color: ${color}; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px;">
-                ${icon_char} ${activity.tipo} · ${activity.hora}
-              </div>
-              <div style="color: #F5F0E8; font-size: 14px; font-weight: 600; margin-bottom: 6px;">
-                ${activity.nombre}
-              </div>
-              <div style="color: rgba(245,240,232,0.6); font-size: 12px; line-height: 1.5; margin-bottom: 8px;">
-                ${activity.descripcion.slice(0, 100)}...
-              </div>
-              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                <span style="background: ${color}20; color: ${color}; border: 1px solid ${color}40; padding: 2px 8px; border-radius: 99px; font-size: 11px;">
-                  $${activity.costo_usd} USD
-                </span>
-                <span style="background: rgba(255,255,255,0.05); color: rgba(245,240,232,0.5); padding: 2px 8px; border-radius: 99px; font-size: 11px;">
-                  ${activity.duracion_horas}h
-                </span>
-              </div>
-              ${activity.requiere_reservacion ? `<div style="margin-top: 8px; color: #C4724A; font-size: 11px;">⚠ Requiere reservación</div>` : ''}
-            </div>
-          `)
           .addTo(mapInstanceRef.current);
 
         marker.on('click', () => setSelectedActivity(activity));
@@ -172,10 +152,19 @@ export function MapView({ itinerary, destination, destinationCoords }: MapViewPr
           dashArray: '5, 8',
         }).addTo(mapInstanceRef.current);
         markersRef.current.push(polyline);
+      }
 
-        mapInstanceRef.current.fitBounds(bounds, { padding: [40, 40] });
-      } else if (bounds.length === 1) {
-        mapInstanceRef.current.setView(bounds[0], 14);
+      // Only fit bounds on first load or when the day filter changes
+      const selectedDayChanged = selectedDay !== prevSelectedDayRef.current;
+      prevSelectedDayRef.current = selectedDay;
+
+      if ((!hasInitialBoundsRef.current || selectedDayChanged) && bounds.length > 0) {
+        if (bounds.length > 1) {
+          mapInstanceRef.current.fitBounds(bounds, { padding: [40, 40] });
+        } else {
+          mapInstanceRef.current.setView(bounds[0], 14);
+        }
+        hasInitialBoundsRef.current = true;
       }
     };
 
