@@ -1,10 +1,12 @@
 import { motion } from 'framer-motion';
-import type { ItineraryData, SearchFormData, WeatherData } from '../../types/itinerary';
+import type { ItineraryData, SearchFormData, WeatherData, Day } from '../../types/itinerary';
 import { Badge } from '../UI/Badge';
 import { Skeleton } from '../UI/Skeleton';
 
 interface TripSummaryProps {
-  itinerary: ItineraryData;
+  resumen: ItineraryData['resumen'];
+  streamedDias: Day[];
+  expectedDays: number;
   formData: SearchFormData;
   weather: WeatherData | null;
   weatherLoading: boolean;
@@ -21,10 +23,8 @@ function WeatherIcon({ code }: { code: number }) {
   return <span className="text-2xl">{icons[code] || '🌡'}</span>;
 }
 
-export function TripSummary({ itinerary, formData, weather, weatherLoading }: TripSummaryProps) {
-  const { resumen, dias } = itinerary;
-  const totalDays = dias.length;
-  const totalActivities = dias.reduce((acc, d) => acc + d.actividades.length, 0);
+export function TripSummary({ resumen, streamedDias, expectedDays, formData, weather, weatherLoading }: TripSummaryProps) {
+  const totalActivities = streamedDias.reduce((acc, d) => acc + d.actividades.length, 0);
 
   const seasonConfig = {
     alta: { label: 'Temporada Alta', variant: 'red' as const, icon: '🔥' },
@@ -34,18 +34,10 @@ export function TripSummary({ itinerary, formData, weather, weatherLoading }: Tr
   const season = seasonConfig[resumen.temporada];
 
   const startDateStr = formData.startDate
-    ? formData.startDate.toLocaleDateString('es-ES', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-      })
+    ? formData.startDate.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })
     : '';
   const endDateStr = formData.endDate
-    ? formData.endDate.toLocaleDateString('es-ES', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-      })
+    ? formData.endDate.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })
     : '';
 
   return (
@@ -84,36 +76,31 @@ export function TripSummary({ itinerary, formData, weather, weatherLoading }: Tr
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <motion.div
-          whileHover={{ scale: 1.02 }}
-          className="glass-dark rounded-xl p-4 text-center"
-        >
-          <div className="text-3xl font-display text-gold mb-1">{totalDays}</div>
+        <motion.div whileHover={{ scale: 1.02 }} className="glass-dark rounded-xl p-4 text-center">
+          <div className="text-3xl font-display text-gold mb-1">{expectedDays}</div>
           <div className="text-ivory/50 text-xs uppercase tracking-wider">Días</div>
         </motion.div>
 
-        <motion.div
-          whileHover={{ scale: 1.02 }}
-          className="glass-dark rounded-xl p-4 text-center"
-        >
-          <div className="text-3xl font-display text-gold mb-1">{totalActivities}</div>
+        <motion.div whileHover={{ scale: 1.02 }} className="glass-dark rounded-xl p-4 text-center">
+          <motion.div
+            key={totalActivities}
+            initial={{ scale: 1.2, color: '#C9A84C' }}
+            animate={{ scale: 1, color: '#C9A84C' }}
+            className="text-3xl font-display text-gold mb-1"
+          >
+            {totalActivities}
+          </motion.div>
           <div className="text-ivory/50 text-xs uppercase tracking-wider">Actividades</div>
         </motion.div>
 
-        <motion.div
-          whileHover={{ scale: 1.02 }}
-          className="glass-dark rounded-xl p-4 text-center"
-        >
+        <motion.div whileHover={{ scale: 1.02 }} className="glass-dark rounded-xl p-4 text-center">
           <div className="text-2xl font-display text-gold mb-1">
             ${resumen.presupuestoTotal.usd.toLocaleString()}
           </div>
           <div className="text-ivory/50 text-xs uppercase tracking-wider">Presupuesto Total</div>
         </motion.div>
 
-        <motion.div
-          whileHover={{ scale: 1.02 }}
-          className="glass-dark rounded-xl p-4 text-center"
-        >
+        <motion.div whileHover={{ scale: 1.02 }} className="glass-dark rounded-xl p-4 text-center">
           {weatherLoading ? (
             <Skeleton className="h-8 w-16 mx-auto mb-1" />
           ) : weather ? (
@@ -122,9 +109,7 @@ export function TripSummary({ itinerary, formData, weather, weatherLoading }: Tr
                 <WeatherIcon code={weather.weathercode} />
                 <span className="text-2xl font-display text-gold">{weather.temperature}°</span>
               </div>
-              <div className="text-ivory/50 text-xs uppercase tracking-wider">
-                {weather.description}
-              </div>
+              <div className="text-ivory/50 text-xs uppercase tracking-wider">{weather.description}</div>
             </>
           ) : (
             <>

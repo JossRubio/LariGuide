@@ -132,6 +132,52 @@ function parseOrRepairJSON(raw) {
   throw new Error('No se pudo reparar el JSON truncado');
 }
 
+function findJsonEnd(text, start) {
+  const opener = text[start];
+  const closer = opener === '{' ? '}' : ']';
+  let depth = 0, inString = false, escaped = false;
+  for (let i = start; i < text.length; i++) {
+    const ch = text[i];
+    if (escaped) { escaped = false; continue; }
+    if (ch === '\\' && inString) { escaped = true; continue; }
+    if (ch === '"') { inString = !inString; continue; }
+    if (inString) continue;
+    if (ch === opener) depth++;
+    else if (ch === closer) { depth--; if (depth === 0) return i; }
+  }
+  return -1;
+}
+
+function tryExtractResumen(text) {
+  const idx = text.indexOf('"resumen":');
+  if (idx === -1) return null;
+  let start = idx + '"resumen":'.length;
+  while (start < text.length && /\s/.test(text[start])) start++;
+  if (start >= text.length || text[start] !== '{') return null;
+  const end = findJsonEnd(text, start);
+  if (end === -1) return null;
+  try { return JSON.parse(text.slice(start, end + 1)); } catch { return null; }
+}
+
+function tryExtractDays(text) {
+  const match = text.match(/"dias"\s*:\s*\[/);
+  if (!match) return [];
+  let pos = match.index + match[0].length;
+  const days = [];
+  while (pos < text.length) {
+    while (pos < text.length && /\s/.test(text[pos])) pos++;
+    if (pos >= text.length || text[pos] !== '{') break;
+    const end = findJsonEnd(text, pos);
+    if (end === -1) break;
+    try {
+      days.push(JSON.parse(text.slice(pos, end + 1)));
+      pos = end + 1;
+      while (pos < text.length && /[,\s]/.test(text[pos])) pos++;
+    } catch { break; }
+  }
+  return days;
+}
+
 async function fetchExchangeRate(currencyCode) {
   if (!currencyCode || currencyCode === 'USD') return null;
   try {
@@ -146,6 +192,123 @@ async function fetchExchangeRate(currencyCode) {
     return null;
   }
 }
+
+// ─── Streaming itinerary endpoint ─────────────────────────────────────────────
+app.post('/api/itinerary/stream', async (req, res) => {
+  const { origin, destination, startDate, endDate, budget, budgetEnabled, provider = 'groq' } = req.body;
+  if (!destination || !startDate || !endDate) {
+    return res.status(400).json({ error: 'Faltan campos requeridos' });
+  }
+
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('Access-Control-Allow-Origin', 'http://localhost:5173');
+  res.flushHeaders();
+
+  const sendEvent = (event, data) => {
+    res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+  };
+
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+
+  const userMessage = `
+Origen: ${origin || 'No especificado'}
+Destino: ${destination}
+Fecha de inicio: ${start.toISOString().split('T')[0]}
+Fecha de fin: ${end.toISOString().split('T')[0]}
+Duración: ${days} días
+${budgetEnabled && budget ? `Presupuesto: $${budget} USD` : 'Sin presupuesto definido'}
+
+Genera el itinerario completo con coordenadas GPS reales, costos actualizados y URLs de reservación oficiales.
+  `.trim();
+
+  const systemPrompt = buildSystemPrompt(budget, budgetEnabled, days);
+  const MAX_TOKENS = 16000;
+
+  let accumulated = '';
+  let resumenSent = false;
+  let daysSent = 0;
+
+  const processChunk = (chunk) => {
+    accumulated += chunk;
+    if (!resumenSent) {
+      const resumen = tryExtractResumen(accumulated);
+      if (resumen) { sendEvent('resumen', resumen); resumenSent = true; }
+    }
+    const extractedDays = tryExtractDays(accumulated);
+    while (extractedDays.length > daysSent) {
+      sendEvent('dia', extractedDays[daysSent]);
+      daysSent++;
+    }
+  };
+
+  try {
+    if (provider === 'anthropic') {
+      if (!anthropic) { sendEvent('error', { error: 'ANTHROPIC_API_KEY no configurada' }); return res.end(); }
+      const stream = anthropic.messages.stream({
+        model: 'claude-sonnet-4-6',
+        max_tokens: MAX_TOKENS,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userMessage }],
+      });
+      for await (const event of stream) {
+        if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+          processChunk(event.delta.text);
+        }
+      }
+    } else if (provider === 'gemini') {
+      if (!gemini) { sendEvent('error', { error: 'GEMINI_API_KEY no configurada' }); return res.end(); }
+      const model = gemini.getGenerativeModel({ model: 'gemini-2.5-flash' });
+      const result = await model.generateContentStream(`${systemPrompt}\n\n${userMessage}`);
+      for await (const chunk of result.stream) { processChunk(chunk.text()); }
+    } else {
+      if (!groq) { sendEvent('error', { error: 'GROQ_API_KEY no configurada' }); return res.end(); }
+      const completion = await groq.chat.completions.create({
+        model: 'llama-3.3-70b-versatile',
+        max_tokens: MAX_TOKENS,
+        stream: true,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userMessage },
+        ],
+      });
+      for await (const chunk of completion) {
+        const text = chunk.choices[0]?.delta?.content || '';
+        if (text) processChunk(text);
+      }
+    }
+
+    const jsonMatch = accumulated.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) { sendEvent('error', { error: 'La IA no devolvió JSON válido' }); return res.end(); }
+
+    const itinerary = parseOrRepairJSON(jsonMatch[0]);
+    const pt = itinerary.resumen?.presupuestoTotal;
+    const candidateA = pt?.monedaLocal?.trim();
+    const candidateB = pt?.nombreMoneda?.trim();
+    const isIsoCode = (s) => s && /^[A-Z]{3}$/.test(s);
+    const currencyCode = isIsoCode(candidateA) ? candidateA : isIsoCode(candidateB) ? candidateB : null;
+    const realRate = await fetchExchangeRate(currencyCode);
+    if (realRate) {
+      itinerary.resumen.presupuestoTotal.valorMonedaLocal = Math.round(realRate * 100) / 100;
+      for (const dia of itinerary.dias || []) {
+        for (const actividad of dia.actividades || []) {
+          if (actividad.costo_usd != null) {
+            actividad.costo_moneda_local = Math.round(actividad.costo_usd * realRate * 100) / 100;
+          }
+        }
+      }
+    }
+    sendEvent('done', itinerary);
+    res.end();
+  } catch (error) {
+    console.error(`Error in stream for ${provider}:`, error);
+    sendEvent('error', { error: error.message || 'Error interno' });
+    res.end();
+  }
+});
 
 // ─── Itinerary endpoint ────────────────────────────────────────────────────────
 app.post('/api/itinerary', async (req, res) => {

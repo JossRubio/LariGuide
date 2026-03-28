@@ -115,15 +115,20 @@ export default function App() {
     };
   }, []);
 
-  const { itinerary, loading, error, generate, regenerate, reset } = useItinerary();
+  const { itinerary, partialResumen, streamedDias, streamingDone, loading, error, generate, regenerate, reset } = useItinerary();
   const { weather, loading: weatherLoading } = useWeather(
     formData?.destinationCoords?.lat ?? null,
     formData?.destinationCoords?.lng ?? null
   );
   const { images, loading: imagesLoading } = useWikimedia(
-    itinerary ? (formData?.destination ?? null) : null,
+    partialResumen ? (formData?.destination ?? null) : null,
     itinerary ?? null
   );
+
+  const expectedDays = formData?.startDate && formData?.endDate
+    ? Math.ceil((formData.endDate.getTime() - formData.startDate.getTime()) / (1000 * 60 * 60 * 24))
+    : 0;
+  const currencySymbol = itinerary?.resumen.presupuestoTotal.simbolo ?? '$';
 
   const handleSubmit = useCallback(
     async (data: SearchFormData) => {
@@ -265,7 +270,7 @@ export default function App() {
 
       {/* Hero / Search + Inspiration */}
       <AnimatePresence>
-        {!itinerary && (
+        {!partialResumen && !itinerary && (
           <motion.div
             initial={{ opacity: 1 }}
             exit={{ opacity: 0, y: -50 }}
@@ -296,7 +301,7 @@ export default function App() {
 
       {/* Error state */}
       <AnimatePresence>
-        {error && !loading && !itinerary && (
+        {error && !loading && !itinerary && !partialResumen && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -330,7 +335,7 @@ export default function App() {
 
       {/* Results */}
       <AnimatePresence>
-        {itinerary && !loading && (
+        {partialResumen && !loading && (
           <motion.div
             ref={resultRef}
             initial={{ opacity: 0 }}
@@ -388,38 +393,59 @@ export default function App() {
             >
               {/* Sections */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5cm', marginTop: '0.5cm' }}>
-                {/* Trip Summary */}
-                <TripSummary
-                  itinerary={itinerary}
-                  formData={formData!}
-                  weather={weather}
-                  weatherLoading={weatherLoading}
-                />
+                {/* Trip Summary — shown immediately when resumen arrives */}
+                <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0 }}>
+                  <TripSummary
+                    resumen={partialResumen}
+                    streamedDias={streamedDias}
+                    expectedDays={expectedDays}
+                    formData={formData!}
+                    weather={weather}
+                    weatherLoading={weatherLoading}
+                  />
+                </motion.div>
 
-                {/* Image Gallery */}
-                <ImageGallery
-                  images={images}
-                  loading={imagesLoading}
-                  destination={formData?.destination || ''}
-                />
+                {/* Image Gallery — appears shortly after */}
+                <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }}>
+                  <ImageGallery
+                    images={images}
+                    loading={imagesLoading}
+                    destination={formData?.destination || ''}
+                  />
+                </motion.div>
 
-                {/* Map View */}
-                <MapView
-                  itinerary={itinerary}
-                  destination={formData?.destination || ''}
-                  destinationCoords={formData?.destinationCoords || null}
-                />
+                {/* Map View — appears after gallery */}
+                <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.4 }}>
+                  <MapView
+                    itinerary={itinerary ?? { resumen: partialResumen!, dias: streamedDias }}
+                    destination={formData?.destination || ''}
+                    destinationCoords={formData?.destinationCoords || null}
+                  />
+                </motion.div>
 
-                {/* Itinerary */}
-                <Itinerary itinerary={itinerary} />
+                {/* Itinerary — appears after map, day cards animate in as they stream */}
+                <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.6 }}>
+                  <Itinerary
+                    dias={streamedDias}
+                    currencySymbol={currencySymbol}
+                    streamingDone={streamingDone}
+                    expectedDays={expectedDays}
+                  />
+                </motion.div>
 
-                {/* Cost Summary */}
-                <CostSummary
-                  itinerary={itinerary}
-                  formData={formData!}
-                  onExportPDF={handleExportPDF}
-                  exportingPDF={exportingPDF}
-                />
+                {/* Cost Summary — only shown when streaming is fully done */}
+                <AnimatePresence>
+                  {streamingDone && itinerary && (
+                    <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+                      <CostSummary
+                        itinerary={itinerary}
+                        formData={formData!}
+                        onExportPDF={handleExportPDF}
+                        exportingPDF={exportingPDF}
+                      />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
               {/* Footer */}
