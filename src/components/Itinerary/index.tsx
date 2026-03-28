@@ -27,7 +27,7 @@ export function Itinerary({ itinerary }: ItineraryProps) {
         </p>
       </motion.div>
 
-      <div className="space-y-4">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25cm' }}>
         {itinerary.dias.map((day, i) => (
           <DayCard
             key={day.numero}

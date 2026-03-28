@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Hero } from './components/Hero';
 import { InspirationSection } from './components/InspirationSection';
@@ -88,7 +88,32 @@ export default function App() {
   const [exportingPDF, setExportingPDF] = useState(false);
   const [preloadCountry, setPreloadCountry] = useState<string | null>(null);
   const [preloadBudget, setPreloadBudget] = useState<number | null>(null);
+  const [navVisible, setNavVisible] = useState(true);
   const resultRef = useRef<HTMLDivElement>(null);
+  const lastScrollY = useRef(0);
+
+  useEffect(() => {
+    let idleTimer: ReturnType<typeof setTimeout>;
+
+    const handleScroll = () => {
+      const currentY = window.scrollY;
+      const scrollingDown = currentY > lastScrollY.current && currentY >= 10;
+      lastScrollY.current = currentY;
+
+      if (scrollingDown) {
+        setNavVisible(false);
+      }
+
+      clearTimeout(idleTimer);
+      idleTimer = setTimeout(() => setNavVisible(true), 1000);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      clearTimeout(idleTimer);
+    };
+  }, []);
 
   const { itinerary, loading, error, generate, regenerate, reset } = useItinerary();
   const { weather, loading: weatherLoading } = useWeather(
@@ -311,71 +336,99 @@ export default function App() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5 }}
-            className="py-12 space-y-8"
-            style={{ width: '88%', maxWidth: '1024px', marginLeft: 'auto', marginRight: 'auto' }}
           >
-            {/* Nav bar */}
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex items-center justify-between"
+            {/* Nav bar — fixed, hide on scroll down / show on scroll up */}
+            <div
+              style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                zIndex: 50,
+                backdropFilter: 'blur(16px)',
+                WebkitBackdropFilter: 'blur(16px)',
+                backgroundColor: 'rgba(10, 10, 15, 0.85)',
+                borderBottom: '1px solid rgba(201, 168, 76, 0.1)',
+                transform: navVisible ? 'translateY(0)' : 'translateY(-100%)',
+                transition: 'transform 0.3s ease-in-out',
+              }}
             >
-              <button
-                onClick={handleNewSearch}
-                className="flex items-center gap-2 text-ivory/50 hover:text-ivory text-sm transition-colors"
+              <div
+                className="flex items-center justify-between py-3"
+                style={{ width: '88%', maxWidth: '1024px', marginLeft: 'auto', marginRight: 'auto' }}
               >
-                ← Nueva búsqueda
-              </button>
-              <div className="flex items-center gap-2">
-                <span className="text-gold text-sm font-medium">✦ LariGuide</span>
+                <button
+                  onClick={handleNewSearch}
+                  className="flex items-center gap-2 text-gold hover:text-gold/70 text-base font-medium transition-colors"
+                >
+                  ← Nueva búsqueda
+                </button>
+                <div className="flex items-center gap-2">
+                  <span className="text-gold text-sm font-medium">✦ LariGuide</span>
+                </div>
+                <button
+                  onClick={handleRegenerate}
+                  className="flex items-center gap-2 text-gold hover:text-gold/70 text-base font-medium transition-colors"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C9A84C" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
+                    <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+                    <polyline points="21 3 21 8 16 8" />
+                    <polyline points="3 21 3 16 8 16" />
+                  </svg>
+                  Regenerar
+                </button>
               </div>
-              <button
-                onClick={handleRegenerate}
-                className="flex items-center gap-2 text-ivory/50 hover:text-gold text-sm transition-colors"
-              >
-                🔄 Regenerar
-              </button>
-            </motion.div>
+            </div>
 
-            {/* Trip Summary */}
-            <TripSummary
-              itinerary={itinerary}
-              formData={formData!}
-              weather={weather}
-              weatherLoading={weatherLoading}
-            />
+            {/* Content — paddingTop compensa la altura de la barra fija (~48px) */}
+            <div
+              className="pb-12"
+              style={{ width: '88%', maxWidth: '1024px', marginLeft: 'auto', marginRight: 'auto', paddingTop: '48px' }}
+            >
+              {/* Sections */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5cm', marginTop: '0.5cm' }}>
+                {/* Trip Summary */}
+                <TripSummary
+                  itinerary={itinerary}
+                  formData={formData!}
+                  weather={weather}
+                  weatherLoading={weatherLoading}
+                />
 
-            {/* Image Gallery */}
-            <ImageGallery
-              images={images}
-              loading={imagesLoading}
-              destination={formData?.destination || ''}
-            />
+                {/* Image Gallery */}
+                <ImageGallery
+                  images={images}
+                  loading={imagesLoading}
+                  destination={formData?.destination || ''}
+                />
 
-            {/* Map View */}
-            <MapView
-              itinerary={itinerary}
-              destination={formData?.destination || ''}
-              destinationCoords={formData?.destinationCoords || null}
-            />
+                {/* Map View */}
+                <MapView
+                  itinerary={itinerary}
+                  destination={formData?.destination || ''}
+                  destinationCoords={formData?.destinationCoords || null}
+                />
 
-            {/* Itinerary */}
-            <Itinerary itinerary={itinerary} />
+                {/* Itinerary */}
+                <Itinerary itinerary={itinerary} />
 
-            {/* Cost Summary */}
-            <CostSummary
-              itinerary={itinerary}
-              formData={formData!}
-              onExportPDF={handleExportPDF}
-              exportingPDF={exportingPDF}
-            />
+                {/* Cost Summary */}
+                <CostSummary
+                  itinerary={itinerary}
+                  formData={formData!}
+                  onExportPDF={handleExportPDF}
+                  exportingPDF={exportingPDF}
+                />
+              </div>
 
-            {/* Footer */}
-            <div className="text-center py-8 border-t border-white/5">
-              <p className="text-gold text-sm font-medium">✦ LariGuide</p>
-              <p className="text-ivory/30 text-xs mt-2">
-                Planificación de viajes con IA · Datos de OpenStreetMap, Open-Meteo y Wikimedia
-              </p>
+              {/* Footer */}
+              <div className="text-center py-8 border-t border-white/5 mt-8">
+                <p className="text-gold text-sm font-medium">✦ LariGuide</p>
+                <p className="text-ivory/30 text-xs mt-2">
+                  Planificación de viajes con IA · Datos de OpenStreetMap, Open-Meteo y Wikimedia
+                </p>
+              </div>
             </div>
           </motion.div>
         )}

@@ -135,7 +135,7 @@ export function CostSummary({ itinerary, formData, onExportPDF, exportingPDF }: 
       )}
 
       {/* Cost breakdown table */}
-      <div className="space-y-2 mb-6">
+      <div className="space-y-2" style={{ marginBottom: '0.25cm' }}>
         {/* Transport to destination */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
@@ -221,7 +221,8 @@ export function CostSummary({ itinerary, formData, onExportPDF, exportingPDF }: 
               className="flex items-center justify-between px-4 py-3 hover:bg-white/2 transition-colors"
             >
               <div>
-                <span className="text-ivory/40 text-xs mr-2">Día {day.numero}</span>
+                <span className="text-ivory/40 text-xs">Día {day.numero}</span>
+                {'\u00A0\u00A0'}
                 <span className="text-ivory text-sm">{day.titulo}</span>
               </div>
               <div className="text-right">
