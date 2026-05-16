@@ -226,7 +226,8 @@ Genera el itinerario completo con coordenadas GPS reales, costos actualizados y 
   `.trim();
 
   const systemPrompt = buildSystemPrompt(budget, budgetEnabled, days);
-  const MAX_TOKENS = 16000;
+  // Groq llama-3.3-70b: límite real 32 768 · Anthropic claude-sonnet: hasta 64 000 · Gemini: sin límite práctico
+  const MAX_TOKENS = provider === 'groq' ? 32000 : 32000;
 
   let accumulated = '';
   let resumenSent = false;
@@ -334,7 +335,7 @@ Genera el itinerario completo con coordenadas GPS reales, costos actualizados y 
   `.trim();
 
   const systemPrompt = buildSystemPrompt(budget, budgetEnabled, days);
-  const MAX_TOKENS = 16000;
+  const MAX_TOKENS = provider === 'groq' ? 32000 : 32000;
 
   try {
     let text = '';
